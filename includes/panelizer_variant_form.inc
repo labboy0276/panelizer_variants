@@ -2,10 +2,13 @@
 
 /**
  * @file
- * Page callback: panelizer variant settings
+ * Page callback: panelizer variant settings.
  * @see panelizer_variant_menu()
  */
 
+/**
+ * Uses hook_form to create view modes form.
+ */
 function panelizer_variant_form($form, &$form_state) {
   $form['view_modes'] = array(
     '#type' => 'textarea',
@@ -23,20 +26,23 @@ function panelizer_variant_form($form, &$form_state) {
   return $form;
 }
 
+/**
+ * USubmission handler.
+ */
 function panelizer_variant_form_submit($form, &$form_state) {
   if ($form_state['values']['view_modes'] != '') {
-    // clear out existing view modes
-    // @todo could be dangerous if things are already selected, find a more gooder way
+    // Clear out existing view modes.
+    // @todo could be dangerous if things are already selected, find a more gooder way.
     db_delete('panelizer_variant_view_modes')->execute();
-    //get data to parse
+    // Get data to parse.
     $view_modes = preg_split("/\r\n|\n|\r/", $form_state['values']['view_modes']);
     foreach ($view_modes as $view_mode) {
       $machine_name = str_replace(' ', '_', $view_mode);
       db_insert('panelizer_variant_view_modes')
       ->fields(
           array(
-          'view_mode_name' => $view_mode,
-          'view_mode_machine_name' => strtolower($machine_name),
+            'view_mode_name' => $view_mode,
+            'view_mode_machine_name' => strtolower($machine_name),
           )
       )
       ->execute();

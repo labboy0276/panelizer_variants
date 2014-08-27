@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Panelizer Variant Install
+ * Panelizer Variant Install.
  */
 
 /**
@@ -10,57 +10,57 @@
  */
 function panelizer_variant_schema() {
   $schema['panelizer_variant'] = array(
-  'description' => 'Panelizer Variant Settings to Use',
-  'fields' => array(
-    'pnid' => array(
-      'description' => 'Panelizer ID Number',
-      'type' => 'int',
-      'length' => 11,
-      'not null' => TRUE,
+    'description' => 'Panelizer Variant Settings to Use',
+    'fields' => array(
+      'pnid' => array(
+        'description' => 'Panelizer ID Number',
+        'type' => 'int',
+        'length' => 11,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => 'Panelizer Name from panelizer_default table',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'variant' => array(
+        'description' => 'Use Variant? 1=TRUE, 0=FALSE',
+        'type' => 'int',
+        'not null' => TRUE,
+        'size' => 'tiny',
+        'default' => 0,
+      ),
     ),
-    'name' => array(
-      'description' => 'Panelizer Name from panelizer_default table',
-      'type' => 'varchar',
-      'length' => 255,
-      'not null' => FALSE,
-      'default' => NULL,
-    ),
-    'variant' => array(
-      'description' => 'Use Variant? 1=TRUE, 0=FALSE',
-      'type' => 'int',
-      'not null' => TRUE,
-      'size' => 'tiny',
-      'default' => 0,
-    ),
-  ),
-  'primary key' => array('pnid'),
+    'primary key' => array('pnid'),
   );
 
   $schema['panelizer_variant_view_modes'] = array(
-  'description' => 'Panelizer View Modes for View Modes',
-  'fields' => array(
-    'pvid' => array(
-      'type' => 'serial',
-      'unsigned' => TRUE,
-      'not null' => TRUE,
-      'description' => 'Primary Key',
+    'description' => 'Panelizer View Modes for View Modes',
+    'fields' => array(
+      'pvid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary Key',
+      ),
+      'view_mode_name' => array(
+        'description' => 'Human readable name of the View Mode',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
+      'view_mode_machine_name' => array(
+        'description' => 'Machine name of the View Mode',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
+      ),
     ),
-    'view_mode_name' => array(
-      'description' => 'Human readable name of the View Mode',
-      'type' => 'varchar',
-      'length' => 255,
-      'not null' => FALSE,
-      'default' => NULL,
-    ),
-    'view_mode_machine_name' => array(
-      'description' => 'Machine name of the View Mode',
-      'type' => 'varchar',
-      'length' => 255,
-      'not null' => FALSE,
-      'default' => NULL,
-    ),
-  ),
-  'primary key' => array('pvid'),
+    'primary key' => array('pvid'),
   );
 
   return $schema;
