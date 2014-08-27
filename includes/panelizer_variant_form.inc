@@ -23,7 +23,7 @@ function panelizer_variant_form($form, &$form_state) {
 }
 
 function panelizer_variant_form_submit($form, &$form_state) {
-		if ($form_state['input']['view_modes'] != '') {
+		if ($form_state['values']['view_modes'] != '') {
 			// clear out existing view modes
 			// @todo could be dangerous if things are already selected, find a more gooder way
 			db_delete('panelizer_variant_view_modes')->execute();

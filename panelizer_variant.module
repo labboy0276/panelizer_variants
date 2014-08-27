@@ -13,7 +13,7 @@ function panelizer_variant_menu() {
     'description' => 'Configuration for Panelizer Variant',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('panelizer_variant_form'),
-    'access arguments' => array('access administration pages'),
+    'access arguments' => array('administer site configuration'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/panelizer_variant_form.inc',
   );
@@ -51,7 +51,7 @@ function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$f
 		'#title' => t('USE VARIANT?'),
 		'#default_value' => variable_get('panelizer_variant_' . $path, NULL),
 		'#options' => drupal_map_assoc(array('No', 'Yes')),
-		'#description' => '<p><strong>NOTE: IF YOU SELECT YES, YOU MUST SELECT A CONTEXT</strong></p><p>If you have not set up view modes, you can do it on the <a href="/admin/config/content/panelizer_variant">Panelizer Varient Setting Page</a></p><p> Then go to your <a href="/admin/structure/types">Content Types</a> and add the view modes to the content type.</p>',
+		'#description' => t('<p><strong>NOTE: IF YOU SELECT YES, YOU MUST SELECT A CONTEXT</strong></p><p>If you have not set up view modes, you can do it on the <a href="/admin/config/content/panelizer_variant">Panelizer Variant Setting Page</a></p><p> Then go to your <a href="/admin/structure/types">Content Types</a> and add the view modes to the content type.</p>'),
 		'#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant</th></tr></thead><tbody><tr><td>',
 		'#suffix' => '</td></tr></tbody></table></div>',
 	);
@@ -65,7 +65,7 @@ function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$f
 */
 function _panelizer_variant_custom_validate($form, &$form_state) {
 	if(!isset($form_state['panelizer']->contexts[0]) && $form_state['values']['use_variant'] == 'Yes') {
-		form_set_error('right][variant', 'You must select a context if using a Variant');
+		form_set_error('right][variant', t('You must select a context if using a Variant'));
 	}
 }
 

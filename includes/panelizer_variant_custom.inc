@@ -37,9 +37,7 @@ function _panelizer_variant_view_modes_select() {
 * Custom function for getting path for variable setting
 */
 function _panelizer_variant_get_path($path) {
-	$result = array();
 	$path = explode('/', $path);
-
 	return $path[5];
 }
 
@@ -96,8 +94,8 @@ function _panelizer_variant_entity_render($context) {
 		//grab the tid from the taxonomy term reference
 		foreach($context['entity'] as $key => $value) {
 			if (strpos($key,'field_') !== false) {
-	    	if (isset($value['und'][0]['tid'])) {
-	    		$current_tid = $value['und'][0]['tid'];
+	    	if (isset($value[LANGUAGE_NONE][0]['tid'])) {
+	    		$current_tid = $value[LANGUAGE_NONE][0]['tid'];
 	    	}
 			}
 		}
