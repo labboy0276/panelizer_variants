@@ -1,86 +1,88 @@
 <?php
 
 /**
+ * @file
+ * Panelizer Variant Install
+ */
+
+/**
  * Implements hook_schema().
  */
-function panelizer_variant_schema() 
-{
-    $schema['panelizer_variant'] = array(
-    'description' => 'Panelizer Variant Settings to Use',
-    'fields' => array(
-      'pnid' => array(
-        'description' => 'Panelizer ID Number',
-        'type' => 'int',
-        'length' => 11,
-        'not null' => true,
-      ),
-      'name' => array(
-        'description' => 'Panelizer Name from panelizer_default table',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => false,
-        'default' => null,
-      ),
-      'variant' => array(
-        'description' => 'Use Variant? 1=TRUE, 0=FALSE',
-        'type' => 'int',
-        'not null' => true,
-        'size' => 'tiny',
-        'default' => 0,
-      ),
+function panelizer_variant_schema() {
+  $schema['panelizer_variant'] = array(
+  'description' => 'Panelizer Variant Settings to Use',
+  'fields' => array(
+    'pnid' => array(
+      'description' => 'Panelizer ID Number',
+      'type' => 'int',
+      'length' => 11,
+      'not null' => TRUE,
     ),
-    'primary key' => array('pnid'),  
-    );
-
-    $schema['panelizer_variant_view_modes'] = array(
-    'description' => 'Panelizer View Modes for View Modes',
-    'fields' => array(
-      'pvid' => array(
-        'type' => 'serial',
-        'unsigned' => true,
-        'not null' => true,
-        'description' => 'Primary Key',
-      ),
-     	'view_mode_name' => array(
-        'description' => 'Human readable name of the View Mode',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => false,
-        'default' => null,
-      ),
-      'view_mode_machine_name' => array(
-        'description' => 'Machine name of the View Mode',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => false,
-        'default' => null,
-      ),
+    'name' => array(
+      'description' => 'Panelizer Name from panelizer_default table',
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'default' => NULL,
     ),
-    'primary key' => array('pvid'),  
-    );
+    'variant' => array(
+      'description' => 'Use Variant? 1=TRUE, 0=FALSE',
+      'type' => 'int',
+      'not null' => TRUE,
+      'size' => 'tiny',
+      'default' => 0,
+    ),
+  ),
+  'primary key' => array('pnid'),
+  );
 
-    return $schema;
+  $schema['panelizer_variant_view_modes'] = array(
+  'description' => 'Panelizer View Modes for View Modes',
+  'fields' => array(
+    'pvid' => array(
+      'type' => 'serial',
+      'unsigned' => TRUE,
+      'not null' => TRUE,
+      'description' => 'Primary Key',
+    ),
+    'view_mode_name' => array(
+      'description' => 'Human readable name of the View Mode',
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'default' => NULL,
+    ),
+    'view_mode_machine_name' => array(
+      'description' => 'Machine name of the View Mode',
+      'type' => 'varchar',
+      'length' => 255,
+      'not null' => FALSE,
+      'default' => NULL,
+    ),
+  ),
+  'primary key' => array('pvid'),
+  );
+
+  return $schema;
 }
 
 /**
  * Implements hook_install().
  */
-function panelizer_variant_install() 
-{
-    if (!db_table_exists('panelizer_variant_view_modes')) {
-        drupal_install_schema('panelizer_variant_view_modes');
-    }
+function panelizer_variant_install() {
+  if (!db_table_exists('panelizer_variant_view_modes')) {
+    drupal_install_schema('panelizer_variant_view_modes');
+  }
 
-    if (!db_table_exists('panelizer_variant')) {
-        drupal_install_schema('panelizer_variant');
-    }
+  if (!db_table_exists('panelizer_variant')) {
+    drupal_install_schema('panelizer_variant');
+  }
 }
 
 /**
  * Implements hook_uninstall().
  */
-function panelizer_variant_uninstall() 
-{
-    drupal_uninstall_schema('panelizer_variant_view_modes');
-    drupal_uninstall_schema('panelizer_variant');
+function panelizer_variant_uninstall() {
+  drupal_uninstall_schema('panelizer_variant_view_modes');
+  drupal_uninstall_schema('panelizer_variant');
 }
