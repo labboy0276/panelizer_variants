@@ -1,0 +1,9 @@
+name = Panelizer Variant
+description = Adds the functionailty of Panels Variants to Panelizer
+package = "Panels"
+dependencies[] = panelizer
+core = 7.x
+version = 7.x-1.0-alpha2
+configure = admin/config/content/panelizer_variant
+
+files[] = includes/panelizer_variant_custom.inc

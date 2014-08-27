@@ -1,0 +1,85 @@
+<?php
+
+include_once 'includes/panelizer_variant_custom.inc';
+
+/**
+ * Implements hook_menu().
+ */
+function panelizer_variant_menu() {
+  $items = array();
+
+  $items['admin/config/content/panelizer_variant'] = array(
+    'title' => 'Panelizer Variant',
+    'description' => 'Configuration for Panelizer Variant',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('panelizer_variant_form'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/panelizer_variant_form.inc',
+  );
+
+  return $items;
+}
+
+
+/**
+* Implements hook_entity_info_alter().
+*/
+function panelizer_variant_entity_info_alter(&$entity_info) {
+	$view_modes = _panelizer_variant_view_modes_select();
+
+	foreach ($view_modes as $view_mode => $value) {
+		$entity_info['node']['view modes'][$view_mode] = array(
+	    'label' => $value,
+	    'custom settings' => TRUE,
+  	);
+	}
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter
+ */
+function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$form_state, $form_id) {
+	$form['right']['variant'] = array(
+    '#weight' => -1,
+  );
+
+  $view_modes = array('none' => 'NONE') + _panelizer_variant_view_modes_select();
+  $path_var = explode('/', drupal_get_path_alias(current_path()));
+
+	$form['right']['variant']['use_variant'] = array(
+		'#type' => 'select',
+		'#title' => t('VARIANT SELECTION'),
+		'#default_value' => variable_get('panelizer_variant_' . $path_var[5], NULL),
+		'#options' => $view_modes,
+		'#description' => '<p><strong>NOTE: IF YOU SELECT A VARIANT, YOU MUST SELECT A CONTEXT</strong></p><p>If you have not set up a view mode, you can do it on the <a href="/admin/config/content/panelizer_variant">Panelizer Varient Setting Page</a>',
+		'#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant</th></tr></thead><tbody><tr><td>',
+		'#suffix' => '</td></tr></tbody></table></div>',
+	);
+
+	$form['#validate'][] = '_panelizer_variant_custom_validate';
+}
+
+/**
+* Custom Validator for panelizer_variant_form_panelizer_default_context_form_alter
+*/
+function _panelizer_variant_custom_validate($form, &$form_state) {
+	if(!isset($form_state['panelizer']->contexts[0]) && $form_state['values']['use_variant'] != 'none') {
+		form_set_error('right][variant', 'You must select a context if using a Variant');
+	} elseif(isset($form_state['panelizer']->contexts[0]) && $form_state['values']['use_variant'] != 'none') {
+		$path_var = explode('/', drupal_get_path_alias(current_path()));
+		variable_set('panelizer_variant_' . $path_var[5], $form_state['values']['use_variant']);
+	}
+}
+
+/**
+* Implements hook_entity_view_mode_alter().
+*/
+function panelizer_variant_entity_view_mode_alter(&$view_mode, $context) {
+	$entity = _panelizer_variant_entity_render($context);
+	if ($context['entity']->type == $entity['type']) {
+		$view_mode = $entity['view_mode'];
+	}
+}
+
+
