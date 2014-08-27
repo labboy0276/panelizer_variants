@@ -44,31 +44,43 @@ function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$f
     '#weight' => -1,
   );
 
-  $view_modes = array('none' => 'NONE') + _panelizer_variant_view_modes_select();
-  $path_var = explode('/', drupal_get_path_alias(current_path()));
+	$path = _panelizer_variant_get_path(drupal_get_path_alias(current_path()));
 
 	$form['right']['variant']['use_variant'] = array(
 		'#type' => 'select',
-		'#title' => t('VARIANT SELECTION'),
-		'#default_value' => variable_get('panelizer_variant_' . $path_var[5], NULL),
-		'#options' => $view_modes,
-		'#description' => '<p><strong>NOTE: IF YOU SELECT A VARIANT, YOU MUST SELECT A CONTEXT</strong></p><p>If you have not set up a view mode, you can do it on the <a href="/admin/config/content/panelizer_variant">Panelizer Varient Setting Page</a>',
+		'#title' => t('USE VARIANT?'),
+		'#default_value' => variable_get('panelizer_variant_' . $path, NULL),
+		'#options' => drupal_map_assoc(array('No', 'Yes')),
+		'#description' => '<p><strong>NOTE: IF YOU SELECT YES, YOU MUST SELECT A CONTEXT</strong></p><p>If you have not set up view modes, you can do it on the <a href="/admin/config/content/panelizer_variant">Panelizer Varient Setting Page</a></p><p> Then go to your <a href="/admin/structure/types">Content Types</a> and add the view modes to the content type.</p>',
 		'#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant</th></tr></thead><tbody><tr><td>',
 		'#suffix' => '</td></tr></tbody></table></div>',
 	);
 
 	$form['#validate'][] = '_panelizer_variant_custom_validate';
+	$form['#submit'][] = '_panelizer_variant_custom_submit';
 }
 
 /**
 * Custom Validator for panelizer_variant_form_panelizer_default_context_form_alter
 */
 function _panelizer_variant_custom_validate($form, &$form_state) {
-	if(!isset($form_state['panelizer']->contexts[0]) && $form_state['values']['use_variant'] != 'none') {
+	if(!isset($form_state['panelizer']->contexts[0]) && $form_state['values']['use_variant'] == 'Yes') {
 		form_set_error('right][variant', 'You must select a context if using a Variant');
-	} elseif(isset($form_state['panelizer']->contexts[0]) && $form_state['values']['use_variant'] != 'none') {
-		$path_var = explode('/', drupal_get_path_alias(current_path()));
-		variable_set('panelizer_variant_' . $path_var[5], $form_state['values']['use_variant']);
+	}
+}
+
+/**
+* Custom SUBMIT for panelizer_variant_form_panelizer_default_context_form_alter
+*/
+function _panelizer_variant_custom_submit($form, &$form_state) {
+	if($form_state['values']['use_variant'] == 'Yes') {
+		$result = _panelizer_variant_get_panelizer_name(drupal_get_path_alias(current_path()));
+		variable_set('panelizer_variant_' . $result['path'], 'Yes');
+		_panelizer_variant_update_table($result, 1);
+	} elseif($form_state['values']['use_variant'] == 'No') {
+		$result = _panelizer_variant_get_panelizer_name(drupal_get_path_alias(current_path()));
+		variable_set('panelizer_variant_' . $result['path'], 'No');
+		_panelizer_variant_update_table($result, 0);
 	}
 }
 
@@ -77,7 +89,7 @@ function _panelizer_variant_custom_validate($form, &$form_state) {
 */
 function panelizer_variant_entity_view_mode_alter(&$view_mode, $context) {
 	$entity = _panelizer_variant_entity_render($context);
-	if ($context['entity']->type == $entity['type']) {
+	if ($entity['panelized']) {
 		$view_mode = $entity['view_mode'];
 	}
 }

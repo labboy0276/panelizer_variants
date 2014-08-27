@@ -12,6 +12,6 @@ This module adds the functionality to have Panelizer Variants based off of View 
 7. Go to your panelizer page: admin/config/content/panelizer
 8. Select the check boxes for your content type & make sure you select these 2 options on the view modes: PANELIZE & PROVIDE DEFAULT PANEL
 9. After saving, go back up and hit the context link for your view mode
-10. Select a Variant and Select your Context setting
+10. Select Yes for Variant and Select your Context setting
 11. You can set up your layout and content now.
 12. Go look at your node and this all should be happy.

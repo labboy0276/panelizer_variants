@@ -34,7 +34,7 @@ function panelizer_variant_form_submit($form, &$form_state) {
 				db_insert('panelizer_variant_view_modes')
 				->fields(array(
 						'view_mode_name' => $view_mode,
-						'view_mode_machine_name' => $machine_name,
+						'view_mode_machine_name' => strtolower($machine_name),
 					))
 				->execute();
 			}
