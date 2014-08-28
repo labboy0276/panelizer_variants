@@ -20,7 +20,7 @@ function panelizer_variant_menu() {
     'page arguments' => array('panelizer_variant_form'),
     'access arguments' => array('administer site configuration'),
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'includes/panelizer_variant.admin.inc',
+    'file' => 'panelizer_variant.admin.inc',
   );
 
   return $items;
