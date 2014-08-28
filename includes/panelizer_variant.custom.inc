@@ -62,9 +62,9 @@ function _panelizer_variant_get_panelizer_name($path) {
  */
 function _panelizer_variant_update_table($result, $value) {
   $data = array(
-    'pnid' => $result['pnid'],
-    'name' => $result['name'],
-    'variant' => $value,
+    'pnid' => filter_xss($result['pnid']),
+    'name' => filter_xss($result['name']),
+    'variant' => filter_xss($value),
   );
   $exist = db_query('SELECT pnid FROM {panelizer_variant} WHERE pnid = :pnid', array(':pnid' => $result['pnid']))->rowCount();
   if ($exist > 0) {

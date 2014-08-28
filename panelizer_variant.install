@@ -83,6 +83,9 @@ function panelizer_variant_install() {
  * Implements hook_uninstall().
  */
 function panelizer_variant_uninstall() {
+  db_delete('variable')
+  ->condition('name', db_like('panelizer_variant_') . '%', 'LIKE')
+  ->execute();
   drupal_uninstall_schema('panelizer_variant_view_modes');
   drupal_uninstall_schema('panelizer_variant');
 }

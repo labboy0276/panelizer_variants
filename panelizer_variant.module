@@ -5,7 +5,7 @@
  * Panelizer Variant Module File.
  */
 
-require_once 'includes/panelizer_variant_custom.inc';
+require_once 'includes/panelizer_variant.custom.inc';
 
 /**
  * Implements hook_menu().
@@ -20,7 +20,7 @@ function panelizer_variant_menu() {
     'page arguments' => array('panelizer_variant_form'),
     'access arguments' => array('administer site configuration'),
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'includes/panelizer_variant_form.inc',
+    'file' => 'includes/panelizer_variant.admin.inc',
   );
 
   return $items;
