@@ -47,6 +47,8 @@ function panelizer_variant_form_submit($form, &$form_state) {
       )
       ->execute();
     }
+    // Fixes Caching problem when going to Content Display.
+    cache_clear_all('entity_info:en', 'cache');
     drupal_set_message(t('The settings have been saved'));
   }
   else {
