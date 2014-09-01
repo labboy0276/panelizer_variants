@@ -12,12 +12,6 @@ function panelizer_variant_schema() {
   $schema['panelizer_variant'] = array(
     'description' => 'Panelizer Variant Settings to Use',
     'fields' => array(
-      'pnid' => array(
-        'description' => 'Panelizer ID Number',
-        'type' => 'int',
-        'length' => 11,
-        'not null' => TRUE,
-      ),
       'name' => array(
         'description' => 'Panelizer Name from panelizer_default table',
         'type' => 'varchar',
@@ -26,14 +20,14 @@ function panelizer_variant_schema() {
         'default' => NULL,
       ),
       'variant' => array(
-        'description' => 'Use Variant? 1=TRUE, 0=FALSE',
-        'type' => 'int',
-        'not null' => TRUE,
-        'size' => 'tiny',
-        'default' => 0,
+        'description' => 'Context Info',
+        'type' => 'text',
+        'size' => 'big',
+        'serialize' => TRUE,
+        'object default' => array(),
       ),
     ),
-    'primary key' => array('pnid'),
+    'primary key' => array('name'),
   );
 
   $schema['panelizer_variant_view_modes'] = array(
@@ -70,6 +64,11 @@ function panelizer_variant_schema() {
  * Implements hook_install().
  */
 function panelizer_variant_install() {
+  db_update('system')
+  ->fields(array('weight' => 21))
+  ->condition('name', 'panelizer_variant', '=')
+  ->execute();
+
   if (!db_table_exists('panelizer_variant_view_modes')) {
     drupal_install_schema('panelizer_variant_view_modes');
   }

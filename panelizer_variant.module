@@ -45,38 +45,37 @@ function panelizer_variant_entity_info_alter(&$entity_info) {
  * Implements hook_form_FORM_ID_alter().
  */
 function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$form_state, $form_id) {
-  $form['right']['variant'] = array(
-    '#weight' => -1,
-  );
+  $view_modes = _panelizer_variant_view_modes_select();
 
-  $path = _panelizer_variant_get_path(drupal_get_path_alias(current_path()));
+  foreach (array_keys($view_modes) as $key) {
+    if ($key == $form_state['panelizer']->view_mode) {
+      $form['right']['variant'] = array(
+        '#weight' => -1,
+      );
 
-  $form['right']['variant']['use_variant'] = array(
-    '#type' => 'select',
-    '#title' => t('USE VARIANT?'),
-    '#default_value' => variable_get('panelizer_variant_' . $path, NULL),
-    '#options' => drupal_map_assoc(array('No', 'Yes')),
-    '#description' => t('<p><strong>NOTE: IF YOU SELECT YES, YOU MUST SELECT A
-      CONTEXT</strong></p><p>If you have not set up view modes, you can do it on
-       the <a href="/admin/config/content/panelizer_variant">Panelizer Variant
-       Setting Page</a></p><p> Then go to your <a href="/admin/structure/types">
-       Content Types</a> and add the view modes to the content type.</p>'),
-    '#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant</th></tr></thead><tbody><tr><td>',
-    '#suffix' => '</td></tr></tbody></table></div>',
-  );
+      $form['right']['variant']['use_variant'] = array(
+        '#markup' => t('<p><strong>NOTE: YOU MUST SELECT A CONTEXT</strong></p>
+           <p>If you have not set up view modes, you can do it on the
+           <a href="/admin/config/content/panelizer_variant">Panelizer Variant
+           Setting Page</a></p><p> Then go to your <a href="/admin/structure/types">
+           Content Types</a> and add the view modes to the content type.</p>'),
+        '#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant Info</th></tr></thead><tbody><tr><td>',
+        '#suffix' => '</td></tr></tbody></table></div>',
+      );
 
-  $form['#validate'][] = '_panelizer_variant_custom_validate';
-  $form['#submit'][] = '_panelizer_variant_custom_submit';
+      $form['#validate'][] = '_panelizer_variant_custom_validate';
+      $form['#submit'][] = '_panelizer_variant_custom_submit';
+    }
+  }
 }
 
 /**
  * Custom Validator for form.
  */
 function _panelizer_variant_custom_validate($form, &$form_state) {
-  if (!isset($form_state['panelizer']->contexts[0])
-    && $form_state['values']['use_variant'] == 'Yes') {
+  if (!isset($form_state['panelizer']->contexts[0])) {
     form_set_error('right][variant',
-      t('You must select a context if using a Variant'));
+      t('You must select a context when using a Variant View Mode'));
   }
 }
 
@@ -84,15 +83,24 @@ function _panelizer_variant_custom_validate($form, &$form_state) {
  * Custom SUBMIT for form.
  */
 function _panelizer_variant_custom_submit($form, &$form_state) {
-  if ($form_state['values']['use_variant'] == 'Yes') {
-    $result = _panelizer_variant_get_panelizer_name(drupal_get_path_alias(current_path()));
-    variable_set('panelizer_variant_' . $result['path'], 'Yes');
-    _panelizer_variant_update_table($result, 1);
+  $values = array();
+  foreach ($form_state['panelizer']->contexts as $key) {
+    $values[] = array(
+      'name' => $key['keyword'],
+      'entity_id' => $key['entity_id'],
+    );
   }
-  elseif ($form_state['values']['use_variant'] == 'No') {
-    $result = _panelizer_variant_get_panelizer_name(drupal_get_path_alias(current_path()));
-    variable_set('panelizer_variant_' . $result['path'], 'No');
-    _panelizer_variant_update_table($result, 0);
+  $name = $form_state['panelizer']->name;
+  $data = array(
+    'name' => $name,
+    'variant' => $values,
+  );
+  $exist = db_query('SELECT name FROM {panelizer_variant} WHERE name = :name', array(':name' => $name))->rowCount();
+  if ($exist > 0) {
+    drupal_write_record('panelizer_variant', $data, 'name');
+  }
+  else {
+    drupal_write_record('panelizer_variant', $data);
   }
 }
 
