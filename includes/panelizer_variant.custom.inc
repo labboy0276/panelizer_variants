@@ -68,6 +68,17 @@ function _panelizer_variant_entity_render($context) {
           }
         }
       }
+      elseif (!isset($value->name) && $value->pipeline == 'ipe') {
+        $variants = db_query('SELECT variant FROM {panelizer_variant}')->fetchAll();
+        foreach ($variants as $variant) {
+          $datas = unserialize($variant->variant);
+          foreach ($datas as $data) {
+            if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
+              $entity['view_mode'] = $value->view_mode;
+            }
+          }
+        }
+      }
     }
     return $entity;
   }
