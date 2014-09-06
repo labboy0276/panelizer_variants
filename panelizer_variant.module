@@ -22,8 +22,15 @@ function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$f
       '#suffix' => '</td></tr></tbody></table></div>',
     );
 
+    // Remove all but Taxonomy term for now from select list.
+    $form['right']['contexts_table']['buttons']['context']['item']['#options'] = array(
+      'entity:taxonomy_term' => 'Taxonomy term',
+    );
+
     $form['#validate'][] = '_panelizer_variant_custom_validate';
     $form['#submit'][] = '_panelizer_variant_custom_submit';
+
+
   }
 }
 
@@ -44,26 +51,13 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
 
   $did = $form_state['panelizer']->did;
   $name = $form_state['panelizer']->name;
-  $eid = $form_state['panelizer']->contexts[0]['entity_id'];
+  $pnid = $form_state['panelizer']->pnid;
+  $view_mode = explode(':', $name);
 
-  // Write to panelizer_entity so it grabs it automitically later on.
-  $data = array(
-    'entity_type' => 'page',
-    'entity_id' => $eid,
-    'revision_id' => $eid,
-    'name' => $name,
-    'no_blocks' => $form_state['panelizer']->no_blocks,
-    'pipeline' => $form_state['panelizer']->pipeline,
-    'contexts' => $form_state['panelizer']->contexts,
-    'relationships' => $form_state['panelizer']->relationships,
-    'did' => $did,
-  );
-  $exist = db_query('SELECT entity_id FROM {panelizer_entity} WHERE did = :did', array(':did' => $did))->rowCount();
+  $exist = db_query('SELECT pnid FROM {panelizer_defaults} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
   if ($exist > 0) {
-    drupal_write_record('panelizer_entity', $data, 'entity_id');
-  }
-  else {
-    drupal_write_record('panelizer_entity', $data);
+    $form_state['panelizer']->view_mode = $view_mode[2];
+    panelizer_context_cache_clear('default', $form_state['cache key']);
   }
 
   // Write to panelizer_variant so we can manipulate the entity_load
@@ -75,12 +69,13 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
     );
   }
   $data_var = array(
+    'pnid' => $pnid,
     'name' => $name,
     'context' => $values,
     'did' => $did,
-    'entity_id' => $eid,
+    'view_mode' => isset($view_mode[2]) ? $view_mode[2] : 'page_manager',
   );
-  $exist_var = db_query('SELECT name FROM {panelizer_variant} WHERE name = :name', array(':name' => $name))->rowCount();
+  $exist_var = db_query('SELECT pnid FROM {panelizer_variant} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
   if ($exist_var > 0) {
     drupal_write_record('panelizer_variant', $data_var, 'name');
   }
@@ -93,10 +88,8 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
  * Implements hook_entity_view_mode_alter().
  */
 function panelizer_variant_entity_view_mode_alter(&$view_mode, $context) {
-  //dpm($context['entity']->panelizer);
-  dpm($context);
-  if ($entity['panelized'] && isset($entity['view_mode'])) {
-    $view_mode = $entity['view_mode'];
+  if (isset($context['entity']->panelizer['page_manager'])) {
+    $view_mode = $context['entity']->panelizer['page_manager']->view_mode;
   }
 }
 
@@ -110,14 +103,38 @@ function panelizer_variant_entity_load(&$entities, $entity_type) {
 
   // foreach ($entities as $entity => $value) {
   //   if (isset($value->panelizer)) {
-  //     foreach ($value->panelizer as $panel => $match) {
-  //       $match->name = $entity_get->name;
-  //       $match->did = $entity_get->did;
-  //       $match->entity_id = $entity_get->entity_id;
+  //     foreach ($value->panelizer as $panelizer) {
+  //       foreach ($panelizer as $keyorig => $valueorig) {
+  //         foreach ($entity_get as $keymatch => $valuematch) {
+  //           if ($keyorig == $keymatch) {
+  //             $entities[$enitity]->panelizer['page_manager']->$keyorig = $valuematch;
+  //           }
+  //         }
+  //       }
   //     }
   //   }
   // }
 
-  // $handler = panelizer_entity_plugin_get_handler($entity_type);
-  // $handler->hook_entity_load($entities);
+  foreach ($entities as $entity => $value) {
+    if (isset($value->panelizer)) {
+      $value->panelizer['page_manager']->name = $entity_get->name;
+      $value->panelizer['page_manager']->pnid = $entity_get->pnid;
+      $value->panelizer['page_manager']->title = $entity_get->title;
+      $value->panelizer['page_manager']->panelizer_type = $entity_get->panelizer_type;
+      $value->panelizer['page_manager']->panelizer_key = $entity_get->panelizer_key;
+      $value->panelizer['page_manager']->no_blocks = $entity_get->no_blocks;
+      $value->panelizer['page_manager']->css_id = $entity_get->css_id;
+      $value->panelizer['page_manager']->css = $entity_get->css;
+      $value->panelizer['page_manager']->pipeline = $entity_get->pipeline;
+      $value->panelizer['page_manager']->contexts = $entity_get->contexts;
+      $value->panelizer['page_manager']->relationships = $entity_get->relationships;
+      $value->panelizer['page_manager']->did = $entity_get->did;
+      $value->panelizer['page_manager']->access = $entity_get->access;
+      $value->panelizer['page_manager']->view_mode = $entity_get->view_mode;
+      $value->panelizer['page_manager']->css_class = $entity_get->css_class;
+      $value->panelizer['page_manager']->title_element = $entity_get->title_element;
+      $value->panelizer['page_manager']->link_to_entity = $entity_get->link_to_entity;
+      $value->panelizer['page_manager']->extra = $entity_get->extra;
+    }
+  }
 }

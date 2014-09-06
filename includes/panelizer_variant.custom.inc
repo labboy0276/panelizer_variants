@@ -10,6 +10,7 @@
  * Custom function for panelizer_variant_entity_view_mode_alter.
  */
 function _panelizer_variant_entity_render($contexts) {
+  $entity = array();
 
   // Grab the tid from the taxonomy term reference.
   $key = (key($contexts));
@@ -28,8 +29,8 @@ function _panelizer_variant_entity_render($contexts) {
       $datas = unserialize($variant->context);
       foreach ($datas as $data) {
         if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
-          $args = array(':name' => $variant->name, ':did' => $variant->did);
-          $entity = db_query('SELECT * FROM {panelizer_entity} WHERE name = :name AND did = :did', $args)->fetch();
+          $args = array(':name' => $variant->name, ':pnid' => $variant->pnid);
+          $entity = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
         }
       }
     }

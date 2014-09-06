@@ -12,6 +12,12 @@ function panelizer_variant_schema() {
   $schema['panelizer_variant'] = array(
     'description' => 'Panelizer Variant Settings to Use',
     'fields' => array(
+      'pnid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'The Panel ID',
+        'no export' => TRUE,
+      ),
       'name' => array(
         'description' => 'Panelizer Name from panelizer_default table',
         'type' => 'varchar',
@@ -32,14 +38,15 @@ function panelizer_variant_schema() {
         'description' => 'The display ID of the panel.',
         'no export' => TRUE,
       ),
-      'entity_id' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'The entity ID this panel is attached to.',
+      'view_mode' => array(
+        'description' => 'view_mode from panelizer_default table',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+        'default' => NULL,
       ),
     ),
-    'primary key' => array('name'),
+    'primary key' => array('pnid'),
   );
 
   return $schema;
