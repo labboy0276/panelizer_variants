@@ -9,20 +9,17 @@
 /**
  * Custom function for panelizer_variant_entity_view_mode_alter.
  */
-function _panelizer_variant_entity_render($contexts) {
-  $entity = array();
+function _panelizer_variant_entity_default($contexts) {
 
   // Grab the tid from the taxonomy term reference.
-  $key = (key($contexts));
-  if (isset($contexts[$key]->panelizer)) {
-    foreach ($contexts[$key] as $context => $value) {
+  if (isset($contexts->panelizer)) {
+    foreach ($contexts as $context => $value) {
       if (strpos($context, 'field_') !== FALSE) {
         if (isset($value[LANGUAGE_NONE][0]['tid'])) {
           $current_tid = $value[LANGUAGE_NONE][0]['tid'];
         }
       }
     }
-
     // Grab all the set varinats in the DB to check, then apply the entity.
     $variants = db_query('SELECT * FROM {panelizer_variant}')->fetchAll();
     foreach ($variants as $variant) {
@@ -30,11 +27,50 @@ function _panelizer_variant_entity_render($contexts) {
       foreach ($datas as $data) {
         if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
           $args = array(':name' => $variant->name, ':pnid' => $variant->pnid);
-          $entity = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
+          $name = $variant->name;
+          $entity_get = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
         }
       }
     }
   }
-
-  return $entity;
+  if (isset($entity_get)) {
+    $entity[$name] = $entity_get;
+    return $entity;
+  } else {
+    return FALSE;
+  }
 }
+
+// /**
+//  * Custom function for panelizer_variant_entity_view_mode_alter.
+//  */
+// function _panelizer_variant_entity_render($contexts) {
+//   $entity = array();
+
+//   // Grab the tid from the taxonomy term reference.
+//   $key = (key($contexts));
+//   if (isset($contexts[$key]->panelizer)) {
+//     foreach ($contexts[$key] as $context => $value) {
+//       if (strpos($context, 'field_') !== FALSE) {
+//         if (isset($value[LANGUAGE_NONE][0]['tid'])) {
+//           $current_tid = $value[LANGUAGE_NONE][0]['tid'];
+//         }
+//       }
+//     }
+
+//     // Grab all the set varinats in the DB to check, then apply the entity.
+//     $variants = db_query('SELECT * FROM {panelizer_variant}')->fetchAll();
+//     foreach ($variants as $variant) {
+//       $datas = unserialize($variant->context);
+//       foreach ($datas as $data) {
+//         if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
+//           $args = array(':name' => $variant->name, ':pnid' => $variant->pnid);
+//           $entity = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
+//         }
+//       }
+//     }
+//   }
+
+//   return $entity;
+// }
+

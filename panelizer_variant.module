@@ -52,13 +52,16 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
   $did = $form_state['panelizer']->did;
   $name = $form_state['panelizer']->name;
   $pnid = $form_state['panelizer']->pnid;
-  $view_mode = explode(':', $name);
+  // $view_mode = explode(':', $name);
 
-  $exist = db_query('SELECT pnid FROM {panelizer_defaults} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
-  if ($exist > 0) {
-    $form_state['panelizer']->view_mode = $view_mode[2];
-    panelizer_context_cache_clear('default', $form_state['cache key']);
-  }
+  // $exist = db_query('SELECT pnid FROM {panelizer_defaults} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
+  // if ($exist > 0) {
+  //   $form_state['panelizer']->view_mode = $view_mode[2];
+  //   panelizer_context_cache_clear('default', $form_state['cache key']);
+  // }
+
+  $eid = entity_id('node', 'page_manager');
+  $test = '1';
 
   // Write to panelizer_variant so we can manipulate the entity_load
   $values = array();
@@ -88,53 +91,74 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
  * Implements hook_entity_view_mode_alter().
  */
 function panelizer_variant_entity_view_mode_alter(&$view_mode, $context) {
-  if (isset($context['entity']->panelizer['page_manager'])) {
-    $view_mode = $context['entity']->panelizer['page_manager']->view_mode;
-  }
-}
-
-function panelizer_variant_entity_load(&$entities, $entity_type) {
-  $entity_get = _panelizer_variant_entity_render($entities);
-
-  /* This is almost there but not quite right, I think I need to take my $entity_get and load it into $entities
-  * then reload this entity somehow, i think the last 2 things do it, but I am missing something here
-  * maybe look and see how panelizer does it for a node override.
-  */
-
-  // foreach ($entities as $entity => $value) {
-  //   if (isset($value->panelizer)) {
-  //     foreach ($value->panelizer as $panelizer) {
-  //       foreach ($panelizer as $keyorig => $valueorig) {
-  //         foreach ($entity_get as $keymatch => $valuematch) {
-  //           if ($keyorig == $keymatch) {
-  //             $entities[$enitity]->panelizer['page_manager']->$keyorig = $valuematch;
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
+  //dpm($context['entity']->panelizer);
+  // if (isset($context['entity']->panelizer['page_manager'])) {
+  //   $view_mode = $context['entity']->panelizer['page_manager']->view_mode;
   // }
-
-  foreach ($entities as $entity => $value) {
-    if (isset($value->panelizer)) {
-      $value->panelizer['page_manager']->name = $entity_get->name;
-      $value->panelizer['page_manager']->pnid = $entity_get->pnid;
-      $value->panelizer['page_manager']->title = $entity_get->title;
-      $value->panelizer['page_manager']->panelizer_type = $entity_get->panelizer_type;
-      $value->panelizer['page_manager']->panelizer_key = $entity_get->panelizer_key;
-      $value->panelizer['page_manager']->no_blocks = $entity_get->no_blocks;
-      $value->panelizer['page_manager']->css_id = $entity_get->css_id;
-      $value->panelizer['page_manager']->css = $entity_get->css;
-      $value->panelizer['page_manager']->pipeline = $entity_get->pipeline;
-      $value->panelizer['page_manager']->contexts = $entity_get->contexts;
-      $value->panelizer['page_manager']->relationships = $entity_get->relationships;
-      $value->panelizer['page_manager']->did = $entity_get->did;
-      $value->panelizer['page_manager']->access = $entity_get->access;
-      $value->panelizer['page_manager']->view_mode = $entity_get->view_mode;
-      $value->panelizer['page_manager']->css_class = $entity_get->css_class;
-      $value->panelizer['page_manager']->title_element = $entity_get->title_element;
-      $value->panelizer['page_manager']->link_to_entity = $entity_get->link_to_entity;
-      $value->panelizer['page_manager']->extra = $entity_get->extra;
-    }
-  }
 }
+
+/**
+ * Implements hook_panelizer_defaults_alter().
+ */
+function panelizer_variant_panelizer_defaults_alter(&$items) {
+  if ($node = menu_get_object()) {
+    $nid = $node->nid;
+    $node = node_load($nid);
+  }
+  $entity = _panelizer_variant_entity_default($node);
+  if ($entity) {
+    unset($items);
+    $items = $entity;
+  }
+  //dpm($items);
+}
+
+
+// function panelizer_variant_entity_load(&$entities, $entity_type) {
+//   $entity_get = _panelizer_variant_entity_render($entities);
+//   //dpm($entity_get);
+//   /* This is almost there but not quite right, I think I need to take my $entity_get and load it into $entities
+//   * then reload this entity somehow, i think the last 2 things do it, but I am missing something here
+//   * maybe look and see how panelizer does it for a node override.
+//   */
+
+//   // foreach ($entities as $entity => $value) {
+//   //   if (isset($value->panelizer)) {
+//   //     foreach ($value->panelizer as $panelizer) {
+//   //       foreach ($panelizer as $keyorig => $valueorig) {
+//   //         foreach ($entity_get as $keymatch => $valuematch) {
+//   //           if ($keyorig == $keymatch) {
+//   //             $entities[$enitity]->panelizer['page_manager']->$keyorig = $valuematch;
+//   //           }
+//   //         }
+//   //       }
+//   //     }
+//   //   }
+//   // }
+
+//   foreach ($entities as $entity => $value) {
+//     if (isset($value->panelizer)) {
+//       $value->panelizer['page_manager']->name = $entity_get->name;
+//       $value->panelizer['page_manager']->pnid = $entity_get->pnid;
+//       $value->panelizer['page_manager']->title = $entity_get->title;
+//       $value->panelizer['page_manager']->panelizer_type = $entity_get->panelizer_type;
+//       $value->panelizer['page_manager']->panelizer_key = $entity_get->panelizer_key;
+//       $value->panelizer['page_manager']->no_blocks = $entity_get->no_blocks;
+//       $value->panelizer['page_manager']->css_id = $entity_get->css_id;
+//       $value->panelizer['page_manager']->css = $entity_get->css;
+//       $value->panelizer['page_manager']->pipeline = $entity_get->pipeline;
+//       $value->panelizer['page_manager']->contexts = $entity_get->contexts;
+//       $value->panelizer['page_manager']->relationships = $entity_get->relationships;
+//       $value->panelizer['page_manager']->did = $entity_get->did;
+//       $value->panelizer['page_manager']->access = $entity_get->access;
+//       $value->panelizer['page_manager']->view_mode = $entity_get->view_mode;
+//       $value->panelizer['page_manager']->css_class = $entity_get->css_class;
+//       $value->panelizer['page_manager']->title_element = $entity_get->title_element;
+//       $value->panelizer['page_manager']->link_to_entity = $entity_get->link_to_entity;
+//       $value->panelizer['page_manager']->extra = $entity_get->extra;
+//     }
+//   }
+//   //$handler = panelizer_entity_plugin_get_handler($entity_type);
+//   // $handler->hook_entity_load($entities);
+// }
+
