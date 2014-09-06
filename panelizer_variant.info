@@ -3,5 +3,3 @@ description = Adds the functionailty of Panels Variants to Panelizer
 package = "Panels"
 dependencies[] = panelizer
 core = 7.x
-
-configure = admin/config/content/panelizer_variant

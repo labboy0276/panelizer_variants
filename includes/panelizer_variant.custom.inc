@@ -7,79 +7,33 @@
  */
 
 /**
- * Custom function for rendering view modes in textarea.
- */
-function _panelizer_variant_view_modes_textarea() {
-  $view_modes = db_query('SELECT view_mode_name FROM {panelizer_variant_view_modes}');
-  $result = '';
-  foreach ($view_modes as $view_mode) {
-    $result .= $view_mode->view_mode_name . "\n";
-  }
-  // Remove last carriage return.
-  $result = rtrim($result, "\n");
-  return $result;
-}
-
-/**
- * Custom function for rendering view modes in select.
- */
-function _panelizer_variant_view_modes_select() {
-  $view_modes = db_query('SELECT view_mode_name,view_mode_machine_name FROM {panelizer_variant_view_modes}');
-  $result = array();
-  foreach ($view_modes as $view_mode) {
-    $result[$view_mode->view_mode_machine_name] = $view_mode->view_mode_name;
-  }
-  return $result;
-}
-
-/**
  * Custom function for panelizer_variant_entity_view_mode_alter.
  */
-function _panelizer_variant_entity_render($context) {
-  $entity = array();
+function _panelizer_variant_entity_render($contexts) {
 
-  // Checks to see if this entity is panelied.
-  if (!isset($context['entity']->panelizer)) {
-    $entity['panelized'] = FALSE;
-    return $entity;
-  }
-  else {
-    $entity['panelized'] = TRUE;
-    $entity['type'] = $context['entity']->type;
-    // Grab the tid from the taxonomy term reference.
-    foreach ($context['entity'] as $key => $value) {
-      if (strpos($key, 'field_') !== FALSE) {
+  // Grab the tid from the taxonomy term reference.
+  $key = (key($contexts));
+  if (isset($contexts[$key]->panelizer)) {
+    foreach ($contexts[$key] as $context => $value) {
+      if (strpos($context, 'field_') !== FALSE) {
         if (isset($value[LANGUAGE_NONE][0]['tid'])) {
           $current_tid = $value[LANGUAGE_NONE][0]['tid'];
         }
       }
     }
-    // Grab the context, @todo make this work for all contexts.
-    foreach ($context['entity']->panelizer as $key => $value) {
-      if (isset($value->name) && !empty($value->contexts)) {
-        $name = $value->name;
-        $variant = db_query('SELECT variant FROM {panelizer_variant} WHERE name = :name', array(':name' => $name))->fetchField();
-        if ($variant) {
-          $datas = unserialize($variant);
-          foreach ($datas as $data) {
-            if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
-              $entity['view_mode'] = $value->view_mode;
-            }
-          }
-        }
-      }
-      elseif (!isset($value->name) && $value->pipeline == 'ipe') {
-        $variants = db_query('SELECT variant FROM {panelizer_variant}')->fetchAll();
-        foreach ($variants as $variant) {
-          $datas = unserialize($variant->variant);
-          foreach ($datas as $data) {
-            if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
-              $entity['view_mode'] = $value->view_mode;
-            }
-          }
+
+    // Grab all the set varinats in the DB to check, then apply the entity.
+    $variants = db_query('SELECT * FROM {panelizer_variant}')->fetchAll();
+    foreach ($variants as $variant) {
+      $datas = unserialize($variant->context);
+      foreach ($datas as $data) {
+        if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
+          $args = array(':name' => $variant->name, ':did' => $variant->did);
+          $entity = db_query('SELECT * FROM {panelizer_entity} WHERE name = :name AND did = :did', $args)->fetch();
         }
       }
     }
-    return $entity;
   }
+
+  return $entity;
 }

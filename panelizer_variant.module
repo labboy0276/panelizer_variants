@@ -8,64 +8,22 @@
 require_once 'includes/panelizer_variant.custom.inc';
 
 /**
- * Implements hook_menu().
- */
-function panelizer_variant_menu() {
-  $items = array();
-
-  $items['admin/config/content/panelizer_variant'] = array(
-    'title' => 'Panelizer Variant',
-    'description' => 'Configuration for Panelizer Variant',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('panelizer_variant_form'),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'panelizer_variant.admin.inc',
-  );
-
-  return $items;
-}
-
-
-/**
- * Implements hook_entity_info_alter().
- */
-function panelizer_variant_entity_info_alter(&$entity_info) {
-  $view_modes = _panelizer_variant_view_modes_select();
-
-  foreach ($view_modes as $view_mode => $value) {
-    $entity_info['node']['view modes'][$view_mode] = array(
-      'label' => $value,
-      'custom settings' => TRUE,
-    );
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter().
  */
 function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$form_state, $form_id) {
-  $view_modes = _panelizer_variant_view_modes_select();
+  if ($form_state['panelizer']->title != "Default") {
+    $form['right']['variant'] = array(
+      '#weight' => -1,
+    );
 
-  foreach (array_keys($view_modes) as $key) {
-    if ($key == $form_state['panelizer']->view_mode) {
-      $form['right']['variant'] = array(
-        '#weight' => -1,
-      );
+    $form['right']['variant']['use_variant'] = array(
+      '#markup' => t('<p><strong>NOTE: YOU MUST SELECT A CONTEXT</strong></p>'),
+      '#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant Info</th></tr></thead><tbody><tr><td>',
+      '#suffix' => '</td></tr></tbody></table></div>',
+    );
 
-      $form['right']['variant']['use_variant'] = array(
-        '#markup' => t('<p><strong>NOTE: YOU MUST SELECT A CONTEXT</strong></p>
-           <p>If you have not set up view modes, you can do it on the
-           <a href="/admin/config/content/panelizer_variant">Panelizer Variant
-           Setting Page</a></p><p> Then go to your <a href="/admin/structure/types">
-           Content Types</a> and add the view modes to the content type.</p>'),
-        '#prefix' => '<div id="ctools-variant-table"><table id="variant-table"><thead><tr><th class="title">Variant Info</th></tr></thead><tbody><tr><td>',
-        '#suffix' => '</td></tr></tbody></table></div>',
-      );
-
-      $form['#validate'][] = '_panelizer_variant_custom_validate';
-      $form['#submit'][] = '_panelizer_variant_custom_submit';
-    }
+    $form['#validate'][] = '_panelizer_variant_custom_validate';
+    $form['#submit'][] = '_panelizer_variant_custom_submit';
   }
 }
 
@@ -83,6 +41,32 @@ function _panelizer_variant_custom_validate($form, &$form_state) {
  * Custom SUBMIT for form.
  */
 function _panelizer_variant_custom_submit($form, &$form_state) {
+
+  $did = $form_state['panelizer']->did;
+  $name = $form_state['panelizer']->name;
+  $eid = $form_state['panelizer']->contexts[0]['entity_id'];
+
+  // Write to panelizer_entity so it grabs it automitically later on.
+  $data = array(
+    'entity_type' => 'page',
+    'entity_id' => $eid,
+    'revision_id' => $eid,
+    'name' => $name,
+    'no_blocks' => $form_state['panelizer']->no_blocks,
+    'pipeline' => $form_state['panelizer']->pipeline,
+    'contexts' => $form_state['panelizer']->contexts,
+    'relationships' => $form_state['panelizer']->relationships,
+    'did' => $did,
+  );
+  $exist = db_query('SELECT entity_id FROM {panelizer_entity} WHERE did = :did', array(':did' => $did))->rowCount();
+  if ($exist > 0) {
+    drupal_write_record('panelizer_entity', $data, 'entity_id');
+  }
+  else {
+    drupal_write_record('panelizer_entity', $data);
+  }
+
+  // Write to panelizer_variant so we can manipulate the entity_load
   $values = array();
   foreach ($form_state['panelizer']->contexts as $key) {
     $values[] = array(
@@ -90,17 +74,18 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
       'entity_id' => $key['entity_id'],
     );
   }
-  $name = $form_state['panelizer']->name;
-  $data = array(
+  $data_var = array(
     'name' => $name,
-    'variant' => $values,
+    'context' => $values,
+    'did' => $did,
+    'entity_id' => $eid,
   );
-  $exist = db_query('SELECT name FROM {panelizer_variant} WHERE name = :name', array(':name' => $name))->rowCount();
-  if ($exist > 0) {
-    drupal_write_record('panelizer_variant', $data, 'name');
+  $exist_var = db_query('SELECT name FROM {panelizer_variant} WHERE name = :name', array(':name' => $name))->rowCount();
+  if ($exist_var > 0) {
+    drupal_write_record('panelizer_variant', $data_var, 'name');
   }
   else {
-    drupal_write_record('panelizer_variant', $data);
+    drupal_write_record('panelizer_variant', $data_var);
   }
 }
 
@@ -108,8 +93,31 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
  * Implements hook_entity_view_mode_alter().
  */
 function panelizer_variant_entity_view_mode_alter(&$view_mode, $context) {
-  $entity = _panelizer_variant_entity_render($context);
+  //dpm($context['entity']->panelizer);
+  dpm($context);
   if ($entity['panelized'] && isset($entity['view_mode'])) {
     $view_mode = $entity['view_mode'];
   }
+}
+
+function panelizer_variant_entity_load(&$entities, $entity_type) {
+  $entity_get = _panelizer_variant_entity_render($entities);
+
+  /* This is almost there but not quite right, I think I need to take my $entity_get and load it into $entities
+  * then reload this entity somehow, i think the last 2 things do it, but I am missing something here
+  * maybe look and see how panelizer does it for a node override.
+  */
+
+  // foreach ($entities as $entity => $value) {
+  //   if (isset($value->panelizer)) {
+  //     foreach ($value->panelizer as $panel => $match) {
+  //       $match->name = $entity_get->name;
+  //       $match->did = $entity_get->did;
+  //       $match->entity_id = $entity_get->entity_id;
+  //     }
+  //   }
+  // }
+
+  // $handler = panelizer_entity_plugin_get_handler($entity_type);
+  // $handler->hook_entity_load($entities);
 }
