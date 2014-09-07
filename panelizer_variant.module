@@ -79,48 +79,49 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
  * Implements hook_entity_load().
  */
 function panelizer_variant_entity_load(&$entities, $entity_type) {
-  $entity_get = _panelizer_variant_entity_render($entities);
+  if ($entity_type == 'node') {
+    $entity_get = _panelizer_variant_entity_render($entities);
+    // I like the foreach loop I wrote here but I can't get it to save the values.
+    // So I did it below this. This all works though.
 
-  // I like the foreach loop I wrote here but I can't get it to save the values.
-  // So I did it below this. This all works though.
 
+    // foreach ($entities as $entity => $value) {
+    //   if (isset($value->panelizer)) {
+    //     foreach ($value->panelizer as $panelizer) {
+    //       foreach ($panelizer as $keyorig => $valueorig) {
+    //         foreach ($entity_get as $keymatch => $valuematch) {
+    //           if ($keyorig == $keymatch) {
+    //             $entities[$enitity]->panelizer['page_manager']->$keyorig = $valuematch;
+    //           }
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
 
-  // foreach ($entities as $entity => $value) {
-  //   if (isset($value->panelizer)) {
-  //     foreach ($value->panelizer as $panelizer) {
-  //       foreach ($panelizer as $keyorig => $valueorig) {
-  //         foreach ($entity_get as $keymatch => $valuematch) {
-  //           if ($keyorig == $keymatch) {
-  //             $entities[$enitity]->panelizer['page_manager']->$keyorig = $valuematch;
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  foreach ($entities as $entity) {
-    if (isset($entity->panelizer) && (count($entity_get) > 0)) {
-      $entity->panelizer['page_manager']->name = $entity_get['name'];
-      $entity->panelizer['page_manager']->pnid = $entity_get['pnid'];
-      $entity->panelizer['page_manager']->title = $entity_get['title'];
-      $entity->panelizer['page_manager']->panelizer_type = $entity_get['panelizer_type'];
-      $entity->panelizer['page_manager']->panelizer_key = $entity_get['panelizer_key'];
-      $entity->panelizer['page_manager']->no_blocks = $entity_get['no_blocks'];
-      $entity->panelizer['page_manager']->css_id = $entity_get['css_id'];
-      $entity->panelizer['page_manager']->css = $entity_get['css'];
-      $entity->panelizer['page_manager']->pipeline = $entity_get['pipeline'];
-      $entity->panelizer['page_manager']->contexts = $entity_get['contexts'];
-      $entity->panelizer['page_manager']->relationships = $entity_get['relationships'];
-      $entity->panelizer['page_manager']->did = $entity_get['did'];
-      $entity->panelizer['page_manager']->access = $entity_get['access'];
-      $entity->panelizer['page_manager']->view_mode = $entity_get['view_mode'];
-      $entity->panelizer['page_manager']->css_class = $entity_get['css_class'];
-      $entity->panelizer['page_manager']->title_element = $entity_get['title_element'];
-      $entity->panelizer['page_manager']->link_to_entity = $entity_get['link_to_entity'];
-      $entity->panelizer['page_manager']->extra = $entity_get['extra'];
-      unset($entity->panelizer['page_manager']->display);
-      $entity->panelizer['page_manager']->display = $entity_get['display'];
+    foreach ($entities as $entity) {
+      if (isset($entity->panelizer) && (count($entity_get) > 0)) {
+        $entity->panelizer['page_manager']->name = $entity_get['name'];
+        $entity->panelizer['page_manager']->pnid = $entity_get['pnid'];
+        $entity->panelizer['page_manager']->title = $entity_get['title'];
+        $entity->panelizer['page_manager']->panelizer_type = $entity_get['panelizer_type'];
+        $entity->panelizer['page_manager']->panelizer_key = $entity_get['panelizer_key'];
+        $entity->panelizer['page_manager']->no_blocks = $entity_get['no_blocks'];
+        $entity->panelizer['page_manager']->css_id = $entity_get['css_id'];
+        $entity->panelizer['page_manager']->css = $entity_get['css'];
+        $entity->panelizer['page_manager']->pipeline = $entity_get['pipeline'];
+        $entity->panelizer['page_manager']->contexts = $entity_get['contexts'];
+        $entity->panelizer['page_manager']->relationships = $entity_get['relationships'];
+        $entity->panelizer['page_manager']->did = $entity_get['did'];
+        $entity->panelizer['page_manager']->access = $entity_get['access'];
+        $entity->panelizer['page_manager']->view_mode = $entity_get['view_mode'];
+        $entity->panelizer['page_manager']->css_class = $entity_get['css_class'];
+        $entity->panelizer['page_manager']->title_element = $entity_get['title_element'];
+        $entity->panelizer['page_manager']->link_to_entity = $entity_get['link_to_entity'];
+        $entity->panelizer['page_manager']->extra = $entity_get['extra'];
+        unset($entity->panelizer['page_manager']->display);
+        $entity->panelizer['page_manager']->display = $entity_get['display'];
+      }
     }
   }
 }
