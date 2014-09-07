@@ -18,8 +18,15 @@ function _panelizer_variant_entity_render($contexts) {
   if (isset($contexts[$key]->panelizer)) {
     foreach ($contexts[$key] as $context => $value) {
       if (strpos($context, 'field_') !== FALSE) {
+        // If a term reference taxonomy terms.
         if (isset($value[LANGUAGE_NONE][0]['tid'])) {
           $current_tid = $value[LANGUAGE_NONE][0]['tid'];
+        // If a entity reference taxonomy terms.
+        } elseif (isset($value[LANGUAGE_NONE][0]['target_id'])) {
+          $current_tid = $value[LANGUAGE_NONE][0]['target_id'];
+        }
+        elseif (!isset($current_tid)) {
+          $current_tid = NULL;
         }
       }
     }
