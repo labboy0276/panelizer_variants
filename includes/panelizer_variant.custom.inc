@@ -36,7 +36,7 @@ function _panelizer_variant_entity_render($contexts) {
             $entity[$key] = $value;
           }
           $displays = panels_load_displays(array($variant->did));
-          foreach($displays as $display) {
+          foreach ($displays as $display) {
             $entity_display['display'] = $display;
           }
           $entity = array_merge($entity, $entity_display);
@@ -47,4 +47,3 @@ function _panelizer_variant_entity_render($contexts) {
 
   return $entity;
 }
-
