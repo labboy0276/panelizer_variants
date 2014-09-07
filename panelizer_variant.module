@@ -79,6 +79,9 @@ function _panelizer_variant_custom_submit($form, &$form_state) {
  * Implements hook_entity_load().
  */
 function panelizer_variant_entity_load(&$entities, $entity_type) {
+  // Clear out the cache for panelizer due to funky WSOD happenings.
+  cache_clear_all('*', 'cache');
+
   if ($entity_type == 'node') {
     $entity_get = _panelizer_variant_entity_render($entities);
     // I like the foreach loop I wrote here but I can't get it to save the values.
@@ -123,5 +126,27 @@ function panelizer_variant_entity_load(&$entities, $entity_type) {
         $entity->panelizer['page_manager']->display = $entity_get['display'];
       }
     }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function panelizer_variant_form_panels_ipe_edit_control_form_alter($form, &$form_state) {
+  array_unshift($form['buttons']['submit']['#submit'], 'panelizer_variant_form_panels_ipe_submit');
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function panelizer_variant_form_panels_ipe_submit($form, $form_state) {
+  // Bump on the DID so we dont nuke the default panel display
+  $did_check = db_query('SELECT MAX(did) FROM {panels_display}')->fetch();
+  foreach ($did_check as $key) {
+    $did = $key;
+  }
+  $did = (int) $did + 1;
+  foreach ($form_state['renderer']->display->content as $key => $value) {
+    $value->did = $did;
   }
 }

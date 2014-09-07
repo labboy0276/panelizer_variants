@@ -37,16 +37,20 @@ function _panelizer_variant_entity_render($contexts) {
       $datas = unserialize($variant->context);
       foreach ($datas as $data) {
         if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
-          $args = array(':name' => $variant->name, ':pnid' => $variant->pnid);
-          $entities = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
-          foreach ($entities as $key => $value) {
-            $entity[$key] = $value;
+          $did = $variant->did;
+          $overridden = db_query('SELECT * FROM {panelizer_entity} WHERE did = :did', array(':did' => $did))->rowCount();
+          if ($overridden == 0) {
+            $args = array(':name' => $variant->name, ':pnid' => $variant->pnid);
+            $entities = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
+            foreach ($entities as $key => $value) {
+              $entity[$key] = $value;
+            }
+            $displays = panels_load_displays(array($did));
+            foreach ($displays as $display) {
+              $entity_display['display'] = $display;
+            }
+            $entity = array_merge($entity, $entity_display);
           }
-          $displays = panels_load_displays(array($variant->did));
-          foreach ($displays as $display) {
-            $entity_display['display'] = $display;
-          }
-          $entity = array_merge($entity, $entity_display);
         }
       }
     }
