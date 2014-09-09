@@ -140,7 +140,7 @@ function panelizer_variant_form_panels_ipe_edit_control_form_alter($form, &$form
  * Implements hook_form_FORM_ID_alter().
  */
 function panelizer_variant_form_panels_ipe_submit($form, $form_state) {
-  // Bump on the DID so we dont nuke the default panel display
+  // Bump on the DID so we dont nuke the default panel display.
   $did_check = db_query('SELECT MAX(did) FROM {panels_display}')->fetch();
   foreach ($did_check as $key) {
     $did = $key;

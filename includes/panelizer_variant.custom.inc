@@ -21,8 +21,9 @@ function _panelizer_variant_entity_render($contexts) {
         // If a term reference taxonomy terms.
         if (isset($value[LANGUAGE_NONE][0]['tid'])) {
           $current_tid = $value[LANGUAGE_NONE][0]['tid'];
+        }
         // If a entity reference taxonomy terms.
-        } elseif (isset($value[LANGUAGE_NONE][0]['target_id'])) {
+        elseif (isset($value[LANGUAGE_NONE][0]['target_id'])) {
           $current_tid = $value[LANGUAGE_NONE][0]['target_id'];
         }
         elseif (!isset($current_tid)) {
