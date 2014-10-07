@@ -10,7 +10,7 @@
  */
 function panelizer_variant_schema() {
   $schema['panelizer_variant'] = array(
-    'description' => 'Panelizer Variant Settings to Use',
+    'description' => 'Panelizer Variant Settings to Use.',
     'fields' => array(
       'pnid' => array(
         'type' => 'int',
@@ -19,14 +19,14 @@ function panelizer_variant_schema() {
         'no export' => TRUE,
       ),
       'name' => array(
-        'description' => 'Panelizer Name from panelizer_default table',
+        'description' => 'Panelizer Name from panelizer_default table.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => FALSE,
         'default' => NULL,
       ),
       'context' => array(
-        'description' => 'Context Info',
+        'description' => 'Context Info.',
         'type' => 'text',
         'size' => 'big',
         'serialize' => TRUE,
@@ -39,7 +39,7 @@ function panelizer_variant_schema() {
         'no export' => TRUE,
       ),
       'view_mode' => array(
-        'description' => 'view_mode from panelizer_default table',
+        'description' => 'view_mode from panelizer_default table.',
         'type' => 'varchar',
         'length' => 255,
         'not null' => FALSE,
@@ -56,21 +56,9 @@ function panelizer_variant_schema() {
  * Implements hook_install().
  */
 function panelizer_variant_install() {
+  // Make this the same weight as panelizer.
   db_update('system')
   ->fields(array('weight' => 21))
   ->condition('name', 'panelizer_variant', '=')
   ->execute();
-
-  if (!db_table_exists('panelizer_variant')) {
-    drupal_install_schema('panelizer_variant');
-  }
-}
-
-/**
- * Implements hook_uninstall().
- */
-function panelizer_variant_uninstall() {
-  if (db_table_exists('panelizer_variant')) {
-    drupal_uninstall_schema('panelizer_variant');
-  }
 }
