@@ -8,7 +8,7 @@
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$form_state, $form_id) {
+function panelizer_variants_form_panelizer_default_context_form_alter(&$form, &$form_state, $form_id) {
   if (isset($form_state['panelizer']->title)) {
     if ($form_state['panelizer']->title != "Default") {
       $form['right']['variant'] = array(
@@ -26,8 +26,8 @@ function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$f
         'entity:taxonomy_term' => t('Taxonomy term'),
       );
 
-      $form['#validate'][] = '_panelizer_variant_validate_handler';
-      $form['#submit'][] = '_panelizer_variant_submit_handler';
+      $form['#validate'][] = '_panelizer_variants_validate_handler';
+      $form['#submit'][] = '_panelizer_variants_submit_handler';
     }
   }
 }
@@ -35,7 +35,7 @@ function panelizer_variant_form_panelizer_default_context_form_alter(&$form, &$f
 /**
  * Helper Validator for form.
  */
-function _panelizer_variant_validate_handler($form, &$form_state) {
+function _panelizer_variants_validate_handler($form, &$form_state) {
   if (!isset($form_state['panelizer']->contexts[0])) {
     form_set_error('right][variant',
       t('You must select a context when using a Variant View Mode.'));
@@ -45,13 +45,13 @@ function _panelizer_variant_validate_handler($form, &$form_state) {
 /**
  * Helper SUBMIT for form.
  */
-function _panelizer_variant_submit_handler($form, &$form_state) {
+function _panelizer_variants_submit_handler($form, &$form_state) {
 
   $did = $form_state['panelizer']->did;
   $name = $form_state['panelizer']->name;
   $pnid = $form_state['panelizer']->pnid;
 
-  // Write to panelizer_variant so we can manipulate the entity_load
+  // Write to panelizer_variants so we can manipulate the entity_load
   $values = array();
   foreach ($form_state['panelizer']->contexts as $key) {
     $values[] = array(
@@ -66,21 +66,21 @@ function _panelizer_variant_submit_handler($form, &$form_state) {
     'did' => $did,
     'view_mode' => 'page_manager',
   );
-  $exist_var = db_query('SELECT pnid FROM {panelizer_variant} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
+  $exist_var = db_query('SELECT pnid FROM {panelizer_variants} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
   if ($exist_var > 0) {
-    drupal_write_record('panelizer_variant', $data_var, 'name');
+    drupal_write_record('panelizer_variants', $data_var, 'name');
   }
   else {
-    drupal_write_record('panelizer_variant', $data_var);
+    drupal_write_record('panelizer_variants', $data_var);
   }
 }
 
 /**
  * Implements hook_entity_load().
  */
-function panelizer_variant_entity_load(&$entities, $entity_type) {
+function panelizer_variants_entity_load(&$entities, $entity_type) {
   if ($entity_type == 'node') {
-    $entity_get = _panelizer_variant_entity_render($entities);
+    $entity_get = _panelizer_variants_entity_render($entities);
     foreach ($entities as $entity) {
       if (isset($entity->panelizer) && (count($entity_get) > 0)) {
         $entity->panelizer['page_manager']->name = $entity_get['name'];
@@ -113,14 +113,14 @@ function panelizer_variant_entity_load(&$entities, $entity_type) {
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function panelizer_variant_form_panels_ipe_edit_control_form_alter($form, &$form_state) {
-  array_unshift($form['buttons']['submit']['#submit'], '_panelizer_variant_ipe_submit_handler');
+function panelizer_variants_form_panels_ipe_edit_control_form_alter($form, &$form_state) {
+  array_unshift($form['buttons']['submit']['#submit'], '_panelizer_variants_ipe_submit_handler');
 }
 
 /**
  * Helper submit for panelizer IPE save.
  */
-function _panelizer_variant_ipe_submit_handler($form, $form_state) {
+function _panelizer_variants_ipe_submit_handler($form, $form_state) {
   // Bump on the DID so we dont nuke the default panel display.
   $did = db_query('SELECT MAX(did) FROM {panels_display}')->fetchField() + 1;
   foreach ($form_state['renderer']->display->content as $display) {
@@ -129,9 +129,9 @@ function _panelizer_variant_ipe_submit_handler($form, $form_state) {
 }
 
 /**
- * Custom function for panelizer_variant_entity_view_mode_alter.
+ * Custom function for panelizer_variants_entity_view_mode_alter.
  */
-function _panelizer_variant_entity_render($contexts) {
+function _panelizer_variants_entity_render($contexts) {
   $entity = array();
   $entity_display = array();
 
@@ -155,7 +155,7 @@ function _panelizer_variant_entity_render($contexts) {
     }
 
     // Grab all the set varinats in the DB to check, then apply the entity.
-    $variants = db_query('SELECT * FROM {panelizer_variant}')->fetchAll();
+    $variants = db_query('SELECT * FROM {panelizer_variants}')->fetchAll();
     foreach ($variants as $variant) {
       $datas = unserialize($variant->context);
       foreach ($datas as $data) {

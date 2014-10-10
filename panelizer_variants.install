@@ -8,9 +8,9 @@
 /**
  * Implements hook_schema().
  */
-function panelizer_variant_schema() {
-  $schema['panelizer_variant'] = array(
-    'description' => 'Panelizer Variant Settings to Use.',
+function panelizer_variants_schema() {
+  $schema['panelizer_variants'] = array(
+    'description' => 'Panelizer Variants Settings to Use.',
     'fields' => array(
       'pnid' => array(
         'type' => 'int',
@@ -55,10 +55,10 @@ function panelizer_variant_schema() {
 /**
  * Implements hook_install().
  */
-function panelizer_variant_install() {
+function panelizer_variants_install() {
   // Make this the same weight as panelizer.
   db_update('system')
   ->fields(array('weight' => 21))
-  ->condition('name', 'panelizer_variant', '=')
+  ->condition('name', 'panelizer_variants', '=')
   ->execute();
 }

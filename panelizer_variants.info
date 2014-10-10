@@ -1,4 +1,4 @@
-name = Panelizer Variant
+name = Panelizer Variants
 description = Adds the functionality of Panels Variants to Panelizer.
 package = "Panels"
 dependencies[] = panelizer
