@@ -38,6 +38,12 @@ function panelizer_variants_schema() {
         'description' => 'The display ID of the panel.',
         'no export' => TRUE,
       ),
+      'pipeline' => array(
+        'description' => 'Panelizer Name from panelizer_default table.',
+        'type' => 'varchar',
+        'length' => 255,
+        'default' => 'standard',
+      ),
       'view_mode' => array(
         'description' => 'view_mode from panelizer_default table.',
         'type' => 'varchar',

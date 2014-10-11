@@ -50,6 +50,7 @@ function _panelizer_variants_submit_handler($form, &$form_state) {
   $did = $form_state['panelizer']->did;
   $name = $form_state['panelizer']->name;
   $pnid = $form_state['panelizer']->pnid;
+  $pipeline = $form_state['panelizer']->pipeline;
 
   // Write to panelizer_variants so we can manipulate the entity_load
   $values = array();
@@ -64,6 +65,7 @@ function _panelizer_variants_submit_handler($form, &$form_state) {
     'name' => $name,
     'context' => $values,
     'did' => $did,
+    'pipeline' => $pipeline,
     'view_mode' => 'page_manager',
   );
   $exist_var = db_query('SELECT pnid FROM {panelizer_variants} WHERE pnid = :pnid', array(':pnid' => $pnid))->rowCount();
@@ -83,27 +85,11 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
     $entity_get = _panelizer_variants_entity_render($entities);
     foreach ($entities as $entity) {
       if (isset($entity->panelizer) && (count($entity_get) > 0)) {
-        // // If overridden load in all the new values.
-        // if ($entity_get['variant_type'] == 'variant_override') {
-        //   $entity->panelizer['page_manager']->name = $entity_get['name'];
-        //   $entity->panelizer['page_manager']->pnid = $entity_get['pnid'];
-        //   $entity->panelizer['page_manager']->title = $entity_get['title'];
-        //   $entity->panelizer['page_manager']->panelizer_type = $entity_get['panelizer_type'];
-        //   $entity->panelizer['page_manager']->panelizer_key = $entity_get['panelizer_key'];
-        //   $entity->panelizer['page_manager']->no_blocks = $entity_get['no_blocks'];
-        //   $entity->panelizer['page_manager']->css_id = $entity_get['css_id'];
-        //   $entity->panelizer['page_manager']->css = $entity_get['css'];
-        //   $entity->panelizer['page_manager']->pipeline = $entity_get['pipeline'];
-        //   $entity->panelizer['page_manager']->contexts = $entity_get['contexts'];
-        //   $entity->panelizer['page_manager']->relationships = $entity_get['relationships'];
-        //   $entity->panelizer['page_manager']->did = $entity_get['did'];
-        //   $entity->panelizer['page_manager']->access = $entity_get['access'];
-        //   $entity->panelizer['page_manager']->view_mode = $entity_get['view_mode'];
-        //   $entity->panelizer['page_manager']->css_class = $entity_get['css_class'];
-        //   $entity->panelizer['page_manager']->title_element = $entity_get['title_element'];
-        //   $entity->panelizer['page_manager']->link_to_entity = $entity_get['link_to_entity'];
-        //   $entity->panelizer['page_manager']->extra = $entity_get['extra'];
-        // }
+        foreach ($entity->panelizer['page_manager'] as $key => $value) {
+          if (isset($value) && isset($entity_get[$key]) && $key != 'display') {
+            $entity->panelizer['page_manager']->$key = $entity_get[$key];
+          }
+        }
 
         // We need to unset the display object so we don't.
         // Have any residual data left in it.
@@ -115,24 +101,6 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
 }
 
 /**
- * Implements hook_form_FORM_ID_alter().
- */
-function panelizer_variants_form_panels_ipe_edit_control_form_alter($form, &$form_state) {
-  array_unshift($form['buttons']['submit']['#submit'], '_panelizer_variants_ipe_submit_handler');
-}
-
-/**
- * Helper submit for panelizer IPE save.
- */
-function _panelizer_variants_ipe_submit_handler($form, $form_state) {
-  // Bump on the DID so we dont nuke the default panel display.
-  $did = db_query('SELECT MAX(did) FROM {panels_display}')->fetchField() + 1;
-  foreach ($form_state['renderer']->display->content as $display) {
-    $display->did = $did;
-  }
-}
-
-/**
  * Custom function for panelizer_variants_entity_view_mode_alter.
  */
 function _panelizer_variants_entity_render($contexts) {
@@ -140,9 +108,9 @@ function _panelizer_variants_entity_render($contexts) {
   $entity_display = array();
 
   // Grab the tid from the taxonomy term reference.
-  $key = (key($contexts));
-  if (isset($contexts[$key]->panelizer)) {
-    foreach ($contexts[$key] as $context => $value) {
+  $nodekey = (key($contexts));
+  if (isset($contexts[$nodekey]->panelizer)) {
+    foreach ($contexts[$nodekey] as $context => $value) {
       if (strpos($context, 'field_') !== FALSE) {
         // If a term reference taxonomy terms.
         if (isset($value[LANGUAGE_NONE][0]['tid'])) {
@@ -164,16 +132,30 @@ function _panelizer_variants_entity_render($contexts) {
       $datas = unserialize($variant->context);
       foreach ($datas as $data) {
         if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
-          $args = array(':eid' => $key);
-          $overridden = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
-          $test = '1';
-          // If overridden.
-          if ($overridden != 0) {
-            $displays = panels_load_displays(array($overridden->did));
-            foreach ($displays as $display) {
-              $entity['display'] = $display;
+          $args = array(':eid' => $nodekey);
+          $entities = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
+          // If in entity table.
+          if ($entities) {
+            if ($entities->did == 0) {
+              foreach ($variant as $key => $value) {
+                $entity[$key] = $value;
+              }
+              $displays = panels_load_displays(array($variant->did));
+              foreach ($displays as $display) {
+                $entity_display['display'] = $display;
+              }
+              $entity = array_merge($entity, $entity_display);
             }
-            $entity['variant_type'] = 'variant_override';
+            else {
+              foreach ($entities as $key => $value) {
+                $entity[$key] = $value;
+              }
+              $displays = panels_load_displays(array($entities->did));
+              foreach ($displays as $display) {
+                $entity_display['display'] = $display;
+              }
+              $entity = array_merge($entity, $entity_display);
+            }
           }
           // If not, use the default layout.
           else {
@@ -186,11 +168,14 @@ function _panelizer_variants_entity_render($contexts) {
                   preg_match('/"([^"]+)"/', $term[1], $default_context);
                   // If TID matches node TID.
                   if ($default_context[1] == $current_tid) {
+                    foreach ($defaults as $key => $value) {
+                      $entity[$key] = $value;
+                    }
                     $displays = panels_load_displays(array($defaults->did));
                     foreach ($displays as $display) {
-                      $entity['display'] = $display;
+                      $entity_display['display'] = $display;
                     }
-                    $entity['variant_type'] = 'variant_default';
+                    $entity = array_merge($entity, $entity_display);
                   }
                 }
               }
