@@ -157,7 +157,7 @@ function _panelizer_variants_entity_render($contexts) {
               $entity = array_merge($entity, $entity_display);
             }
           }
-          // If not, use the default layout.
+          // If all else fails, use the default layout.
           else {
             $defaults = db_query('SELECT * FROM {panelizer_defaults}')->fetch();
             foreach ($defaults as $default => $value) {
