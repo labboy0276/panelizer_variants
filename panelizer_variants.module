@@ -83,24 +83,28 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
     $entity_get = _panelizer_variants_entity_render($entities);
     foreach ($entities as $entity) {
       if (isset($entity->panelizer) && (count($entity_get) > 0)) {
-        $entity->panelizer['page_manager']->name = $entity_get['name'];
-        $entity->panelizer['page_manager']->pnid = $entity_get['pnid'];
-        $entity->panelizer['page_manager']->title = $entity_get['title'];
-        $entity->panelizer['page_manager']->panelizer_type = $entity_get['panelizer_type'];
-        $entity->panelizer['page_manager']->panelizer_key = $entity_get['panelizer_key'];
-        $entity->panelizer['page_manager']->no_blocks = $entity_get['no_blocks'];
-        $entity->panelizer['page_manager']->css_id = $entity_get['css_id'];
-        $entity->panelizer['page_manager']->css = $entity_get['css'];
-        $entity->panelizer['page_manager']->pipeline = $entity_get['pipeline'];
-        $entity->panelizer['page_manager']->contexts = $entity_get['contexts'];
-        $entity->panelizer['page_manager']->relationships = $entity_get['relationships'];
-        $entity->panelizer['page_manager']->did = $entity_get['did'];
-        $entity->panelizer['page_manager']->access = $entity_get['access'];
-        $entity->panelizer['page_manager']->view_mode = $entity_get['view_mode'];
-        $entity->panelizer['page_manager']->css_class = $entity_get['css_class'];
-        $entity->panelizer['page_manager']->title_element = $entity_get['title_element'];
-        $entity->panelizer['page_manager']->link_to_entity = $entity_get['link_to_entity'];
-        $entity->panelizer['page_manager']->extra = $entity_get['extra'];
+        // // If overridden load in all the new values.
+        // if ($entity_get['variant_type'] == 'variant_override') {
+        //   $entity->panelizer['page_manager']->name = $entity_get['name'];
+        //   $entity->panelizer['page_manager']->pnid = $entity_get['pnid'];
+        //   $entity->panelizer['page_manager']->title = $entity_get['title'];
+        //   $entity->panelizer['page_manager']->panelizer_type = $entity_get['panelizer_type'];
+        //   $entity->panelizer['page_manager']->panelizer_key = $entity_get['panelizer_key'];
+        //   $entity->panelizer['page_manager']->no_blocks = $entity_get['no_blocks'];
+        //   $entity->panelizer['page_manager']->css_id = $entity_get['css_id'];
+        //   $entity->panelizer['page_manager']->css = $entity_get['css'];
+        //   $entity->panelizer['page_manager']->pipeline = $entity_get['pipeline'];
+        //   $entity->panelizer['page_manager']->contexts = $entity_get['contexts'];
+        //   $entity->panelizer['page_manager']->relationships = $entity_get['relationships'];
+        //   $entity->panelizer['page_manager']->did = $entity_get['did'];
+        //   $entity->panelizer['page_manager']->access = $entity_get['access'];
+        //   $entity->panelizer['page_manager']->view_mode = $entity_get['view_mode'];
+        //   $entity->panelizer['page_manager']->css_class = $entity_get['css_class'];
+        //   $entity->panelizer['page_manager']->title_element = $entity_get['title_element'];
+        //   $entity->panelizer['page_manager']->link_to_entity = $entity_get['link_to_entity'];
+        //   $entity->panelizer['page_manager']->extra = $entity_get['extra'];
+        // }
+
         // We need to unset the display object so we don't.
         // Have any residual data left in it.
         unset($entity->panelizer['page_manager']->display);
@@ -160,19 +164,37 @@ function _panelizer_variants_entity_render($contexts) {
       $datas = unserialize($variant->context);
       foreach ($datas as $data) {
         if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
-          $did = $variant->did;
-          $overridden = db_query('SELECT * FROM {panelizer_entity} WHERE did = :did', array(':did' => $did))->rowCount();
-          if ($overridden == 0) {
-            $args = array(':name' => $variant->name, ':pnid' => $variant->pnid);
-            $entities = db_query('SELECT * FROM {panelizer_defaults} WHERE name = :name AND pnid = :pnid', $args)->fetch();
-            foreach ($entities as $key => $value) {
-              $entity[$key] = $value;
-            }
-            $displays = panels_load_displays(array($did));
+          $args = array(':eid' => $key);
+          $overridden = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
+          $test = '1';
+          // If overridden.
+          if ($overridden != 0) {
+            $displays = panels_load_displays(array($overridden->did));
             foreach ($displays as $display) {
-              $entity_display['display'] = $display;
+              $entity['display'] = $display;
             }
-            $entity = array_merge($entity, $entity_display);
+            $entity['variant_type'] = 'variant_override';
+          }
+          // If not, use the default layout.
+          else {
+            $defaults = db_query('SELECT * FROM {panelizer_defaults}')->fetch();
+            foreach ($defaults as $default => $value) {
+              if ($default == 'contexts') {
+                // Not really seralized data anymore, must use explode.
+                if (strpos($value,'taxonomy_term') !== false) {
+                  $term = explode('"entity_id";', $value);
+                  preg_match('/"([^"]+)"/', $term[1], $default_context);
+                  // If TID matches node TID.
+                  if ($default_context[1] == $current_tid) {
+                    $displays = panels_load_displays(array($defaults->did));
+                    foreach ($displays as $display) {
+                      $entity['display'] = $display;
+                    }
+                    $entity['variant_type'] = 'variant_default';
+                  }
+                }
+              }
+            }
           }
         }
       }
