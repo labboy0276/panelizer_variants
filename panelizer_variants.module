@@ -82,47 +82,53 @@ function _panelizer_variants_submit_handler($form, &$form_state) {
  */
 function panelizer_variants_entity_load(&$entities, $entity_type) {
   if ($entity_type == 'node') {
-    $entity_get = _panelizer_variants_entity_render($entities);
-    foreach ($entities as $entity) {
-      if (isset($entity->panelizer) && (count($entity_get) > 0)) {
-        foreach ($entity->panelizer['page_manager'] as $key => $value) {
-          if (isset($value) && isset($entity_get[$key]) && $key != 'display') {
-            $entity->panelizer['page_manager']->$key = $entity_get[$key];
+    // Quick check for Panelizer so are not going trhough all this.
+    // If the entity is not a panelizer one.
+    foreach ($entities as $check) {
+      $is_panelized =  isset($check->panelizer) ? TRUE : FALSE;
+    }
+    if ($is_panelized) {
+      $entity_get = _panelizer_variants_entity_render($entities);
+      foreach ($entities as $entity) {
+        if (isset($entity->panelizer) && (count($entity_get) > 0)) {
+          foreach ($entity->panelizer['page_manager'] as $key => $value) {
+            if (isset($value) && isset($entity_get[$key]) && $key != 'display') {
+              $entity->panelizer['page_manager']->$key = $entity_get[$key];
+            }
           }
-        }
 
-        // We need to unset the display object so we don't.
-        // Have any residual data left in it.
-        unset($entity->panelizer['page_manager']->display);
-        $entity->panelizer['page_manager']->display = $entity_get['display'];
+          // We need to unset the display object so we don't.
+          // Have any residual data left in it.
+          unset($entity->panelizer['page_manager']->display);
+          $entity->panelizer['page_manager']->display = $entity_get['display'];
+        }
       }
     }
   }
 }
 
 /**
- * Custom function for panelizer_variants_entity_view_mode_alter.
+ * Custom function for rendering the panel based on
+ * context selections from the node / panel.
+ *
+ * @param $node is the node entity from hook_entity_load().
+ *
+ * @return $entity is the entity with proper panelizer
+ * attributes attached to display or returns FALSE.
  */
-function _panelizer_variants_entity_render($contexts) {
+function _panelizer_variants_entity_render($node) {
   $entity = array();
   $entity_display = array();
-
+  $check = array();
   // Grab the tid from the taxonomy term reference.
-  $nodekey = (key($contexts));
-  if (isset($contexts[$nodekey]->panelizer)) {
-    foreach ($contexts[$nodekey] as $context => $value) {
+  $nodekey = (key($node));
+
+  if (isset($node[$nodekey]->panelizer)) {
+    foreach ($node[$nodekey] as $context => $value) {
+      // If a field then check for context.
       if (strpos($context, 'field_') !== FALSE) {
-        // If a term reference taxonomy terms.
-        if (isset($value[LANGUAGE_NONE][0]['tid'])) {
-          $current_tid = $value[LANGUAGE_NONE][0]['tid'];
-        }
-        // If a entity reference taxonomy terms.
-        elseif (isset($value[LANGUAGE_NONE][0]['target_id'])) {
-          $current_tid = $value[LANGUAGE_NONE][0]['target_id'];
-        }
-        elseif (!isset($current_tid)) {
-          $current_tid = NULL;
-        }
+        $check[] = panelizer_variant_check_contexts('target_id', $node[$nodekey]->$context);
+        $check[] = panelizer_variant_check_contexts('tid', $node[$nodekey]->$context);
       }
     }
 
@@ -131,11 +137,12 @@ function _panelizer_variants_entity_render($contexts) {
     foreach ($variants as $variant) {
       $datas = unserialize($variant->context);
       foreach ($datas as $data) {
-        if ($data['name'] == 'taxonomy_term' && $data['entity_id'] == $current_tid) {
+        if ($data['name'] == 'taxonomy_term' && in_array($data['entity_id'], $check)) {
           $args = array(':eid' => $nodekey);
           $entities = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
           // If in entity table.
           if ($entities) {
+            // If this is not overridden, did should be 0. Use panelizer_variant table.
             if ($entities->did == 0) {
               foreach ($variant as $key => $value) {
                 $entity[$key] = $value;
@@ -146,6 +153,7 @@ function _panelizer_variants_entity_render($contexts) {
               }
               $entity = array_merge($entity, $entity_display);
             }
+            // Overridden default panelizer variant. Use panelizer_entity table.
             else {
               foreach ($entities as $key => $value) {
                 $entity[$key] = $value;
@@ -167,7 +175,7 @@ function _panelizer_variants_entity_render($contexts) {
                   $term = explode('"entity_id";', $value);
                   preg_match('/"([^"]+)"/', $term[1], $default_context);
                   // If TID matches node TID.
-                  if ($default_context[1] == $current_tid) {
+                  if (in_array($default_context[1], $check)) {
                     foreach ($defaults as $key => $value) {
                       $entity[$key] = $value;
                     }
@@ -184,7 +192,31 @@ function _panelizer_variants_entity_render($contexts) {
         }
       }
     }
-  }
 
-  return $entity;
+    return $entity;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Custom recursive function for checking for specific context
+ * within the awesomesauce that is drupal field arrays.
+ *
+ * @param $needle is context field search item
+ *
+ * @param $haystack is the object we are looking in.
+ *
+ * @return $item is the return value of the search
+ */
+function panelizer_variant_check_contexts($needle, $haystack) {
+  foreach ($haystack as $item) {
+    if (is_array($item)) {
+      return panelizer_variant_check_contexts($needle, $item);
+    }
+    elseif (key($haystack) == $needle)  {
+      return $item;
+    }
+  }
 }
