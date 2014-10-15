@@ -85,7 +85,7 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
     // Quick check for Panelizer so are not going trhough all this.
     // If the entity is not a panelizer one.
     foreach ($entities as $check) {
-      $is_panelized =  isset($check->panelizer) ? TRUE : FALSE;
+      $is_panelized = isset($check->panelizer) ? TRUE : FALSE;
     }
     if ($is_panelized) {
       $entity_get = _panelizer_variants_entity_render($entities);
@@ -108,13 +108,13 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
 }
 
 /**
- * Custom function for rendering the panel based on
- * context selections from the node / panel.
+ * For rendering the panel based on Context selections from the node / panel.
  *
- * @param $node is the node entity from hook_entity_load().
+ * @param array $node
+ *   Is the node entity from hook_entity_load().
  *
- * @return $entity is the entity with proper panelizer
- * attributes attached to display or returns FALSE.
+ * @return array
+ *   Entity with proper panelizer attributes attached to display or FALSE.
  */
 function _panelizer_variants_entity_render($node) {
   $entity = array();
@@ -127,8 +127,8 @@ function _panelizer_variants_entity_render($node) {
     foreach ($node[$nodekey] as $context => $value) {
       // If a field then check for context.
       if (strpos($context, 'field_') !== FALSE) {
-        $check[] = panelizer_variant_check_contexts('target_id', $node[$nodekey]->$context);
-        $check[] = panelizer_variant_check_contexts('tid', $node[$nodekey]->$context);
+        $check[] = _panelizer_variants_check_contexts('target_id', $node[$nodekey]->$context);
+        $check[] = _panelizer_variants_check_contexts('tid', $node[$nodekey]->$context);
       }
     }
 
@@ -142,7 +142,8 @@ function _panelizer_variants_entity_render($node) {
           $entities = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
           // If in entity table.
           if ($entities) {
-            // If this is not overridden, did should be 0. Use panelizer_variant table.
+            // If this is not overridden, did should be 0.
+            // Use panelizer_variant table.
             if ($entities->did == 0) {
               foreach ($variant as $key => $value) {
                 $entity[$key] = $value;
@@ -153,7 +154,8 @@ function _panelizer_variants_entity_render($node) {
               }
               $entity = array_merge($entity, $entity_display);
             }
-            // Overridden default panelizer variant. Use panelizer_entity table.
+            // Overridden default panelizer variant.
+            // Use panelizer_entity table.
             else {
               foreach ($entities as $key => $value) {
                 $entity[$key] = $value;
@@ -171,7 +173,7 @@ function _panelizer_variants_entity_render($node) {
             foreach ($defaults as $default => $value) {
               if ($default == 'contexts') {
                 // Not really seralized data anymore, must use explode.
-                if (strpos($value,'taxonomy_term') !== false) {
+                if (strpos($value, 'taxonomy_term') !== FALSE) {
                   $term = explode('"entity_id";', $value);
                   preg_match('/"([^"]+)"/', $term[1], $default_context);
                   // If TID matches node TID.
@@ -201,21 +203,22 @@ function _panelizer_variants_entity_render($node) {
 }
 
 /**
- * Custom recursive function for checking for specific context
- * within the awesomesauce that is drupal field arrays.
+ * For checking for specific context within drupal field arrays.
  *
- * @param $needle is context field search item
+ * @param string $needle
+ *   Is context field search item.
+ * @param array $haystack
+ *   Is the object we are looking in.
  *
- * @param $haystack is the object we are looking in.
- *
- * @return $item is the return value of the search
+ * @return string
+ *   Is the return value of the search.
  */
-function panelizer_variant_check_contexts($needle, $haystack) {
+function _panelizer_variants_check_contexts($needle, $haystack) {
   foreach ($haystack as $item) {
     if (is_array($item)) {
       return panelizer_variant_check_contexts($needle, $item);
     }
-    elseif (key($haystack) == $needle)  {
+    elseif (key($haystack) == $needle) {
       return $item;
     }
   }
