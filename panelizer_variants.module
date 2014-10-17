@@ -120,79 +120,81 @@ function _panelizer_variants_entity_render($node) {
   $entity = array();
   $entity_display = array();
   $check = array();
-  // Grab the tid from the taxonomy term reference.
+  // The NID from the array key.
   $nodekey = (key($node));
 
   if (isset($node[$nodekey]->panelizer)) {
     foreach ($node[$nodekey] as $context => $value) {
       // If a field then check for context.
       if (strpos($context, 'field_') !== FALSE) {
-        $check[] = _panelizer_variants_check_contexts('target_id', $node[$nodekey]->$context);
-        $check[] = _panelizer_variants_check_contexts('tid', $node[$nodekey]->$context);
+        // MAYBE CHANGE THIS TO GRAB THIS AND CHANGE THE KEY TO BE WHAT IT FOUND
+        // Also should look into panels_panel_context_render at some point.
+        $check[] = array('taxonomy_term' => _panelizer_variants_check_contexts('target_id', $node[$nodekey]->$context));
+        $check[] = array('taxonomy_term' => _panelizer_variants_check_contexts('tid', $node[$nodekey]->$context));
       }
     }
 
-    // Grab all the set varinats in the DB to check, then apply the entity.
+    // Grab all the set variants in the DB to check, then apply the entity.
     $variants = db_query('SELECT * FROM {panelizer_variants}')->fetchAll();
     foreach ($variants as $variant) {
       $datas = unserialize($variant->context);
-      foreach ($datas as $data) {
-        if ($data['name'] == 'taxonomy_term' && in_array($data['entity_id'], $check)) {
-          $args = array(':eid' => $nodekey);
-          $entities = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
-          // If in entity table.
-          if ($entities) {
-            // If this is not overridden, did should be 0.
-            // Use panelizer_variant table.
-            if ($entities->did == 0) {
-              foreach ($variant as $key => $value) {
-                $entity[$key] = $value;
-              }
-              $displays = panels_load_displays(array($variant->did));
-              foreach ($displays as $display) {
-                $entity_display['display'] = $display;
-              }
-              $entity = array_merge($entity, $entity_display);
+      $match = _panelizer_variants_find_match($datas, $check);
+      if ($match) {
+        $args = array(':eid' => $nodekey);
+        $entities = db_query('SELECT * FROM {panelizer_entity} WHERE entity_id = :eid', $args)->fetch();
+        // If in entity table.
+        if ($entities) {
+          // If this is not overridden, did should be 0.
+          // Use panelizer_variant table.
+          if ($entities->did == 0) {
+            foreach ($variant as $key => $value) {
+              $entity[$key] = $value;
             }
-            // Overridden default panelizer variant.
-            // Use panelizer_entity table.
-            else {
-              foreach ($entities as $key => $value) {
-                $entity[$key] = $value;
-              }
-              $displays = panels_load_displays(array($entities->did));
-              foreach ($displays as $display) {
-                $entity_display['display'] = $display;
-              }
-              $entity = array_merge($entity, $entity_display);
+            $displays = panels_load_displays(array($variant->did));
+            foreach ($displays as $display) {
+              $entity_display['display'] = $display;
             }
+            $entity = array_merge($entity, $entity_display);
           }
-          // If all else fails, use the default layout.
+          // Overridden default panelizer variant.
+          // Use panelizer_entity table.
           else {
-            $defaults = db_query('SELECT * FROM {panelizer_defaults}')->fetch();
-            foreach ($defaults as $default => $value) {
-              if ($default == 'contexts') {
-                // Not really seralized data anymore, must use explode.
-                if (strpos($value, 'taxonomy_term') !== FALSE) {
-                  $term = explode('"entity_id";', $value);
-                  preg_match('/"([^"]+)"/', $term[1], $default_context);
-                  // If TID matches node TID.
-                  if (in_array($default_context[1], $check)) {
-                    foreach ($defaults as $key => $value) {
-                      $entity[$key] = $value;
-                    }
-                    $displays = panels_load_displays(array($defaults->did));
-                    foreach ($displays as $display) {
-                      $entity_display['display'] = $display;
-                    }
-                    $entity = array_merge($entity, $entity_display);
+            foreach ($entities as $key => $value) {
+              $entity[$key] = $value;
+            }
+            $displays = panels_load_displays(array($entities->did));
+            foreach ($displays as $display) {
+              $entity_display['display'] = $display;
+            }
+            $entity = array_merge($entity, $entity_display);
+          }
+        }
+        // If all else fails, use the default layout.
+        else {
+          $defaults = db_query('SELECT * FROM {panelizer_defaults}')->fetch();
+          foreach ($defaults as $default => $value) {
+            if ($default == 'contexts') {
+              // Not really seralized data anymore, must use explode.
+              if (strpos($value, 'taxonomy_term') !== FALSE) {
+                $term = explode('"entity_id";', $value);
+                preg_match('/"([^"]+)"/', $term[1], $default_context);
+                // If TID matches node TID.
+                if (in_array($default_context[1], $check)) {
+                  foreach ($defaults as $key => $value) {
+                    $entity[$key] = $value;
                   }
+                  $displays = panels_load_displays(array($defaults->did));
+                  foreach ($displays as $display) {
+                    $entity_display['display'] = $display;
+                  }
+                  $entity = array_merge($entity, $entity_display);
                 }
               }
             }
           }
         }
       }
+
     }
 
     return $entity;
@@ -216,10 +218,39 @@ function _panelizer_variants_entity_render($node) {
 function _panelizer_variants_check_contexts($needle, $haystack) {
   foreach ($haystack as $item) {
     if (is_array($item)) {
-      return panelizer_variant_check_contexts($needle, $item);
+      return _panelizer_variants_check_contexts($needle, $item);
     }
     elseif (key($haystack) == $needle) {
       return $item;
     }
   }
+}
+
+
+/**
+ * For matching contexts on the variant.
+ *
+ * @param array $datas
+ *   Is the variant context.
+ * @param array $check
+ *   Is the node context.
+ *
+ * @return boolean
+ *   If it matches, return TRUE.
+ */
+function _panelizer_variants_find_match($datas, $check) {
+  // We are going to set a counter to match results.
+  $count = 0;
+  foreach ($check as $key => $value) {
+    $contexts = key($value);
+    foreach ($datas as $data) {
+      // If the $data matches the entity name and the value id.
+      if ($data['name'] == $contexts && $data['entity_id'] == $value[$contexts]) {
+        ++$count;
+      }
+    }
+  }
+
+  // If counts match up, return TRUE.
+  return ($count == count($datas)) ? TRUE : FALSE;
 }
