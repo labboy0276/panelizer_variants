@@ -24,6 +24,7 @@ function panelizer_variants_form_panelizer_default_context_form_alter(&$form, &$
       // Remove all but Taxonomy term for now from select list.
       $form['right']['contexts_table']['buttons']['context']['item']['#options'] = array(
         'entity:taxonomy_term' => t('Taxonomy term'),
+        'entity:taxonomy_vocabulary' => t('Taxonomy vocabulary'),
       );
 
       $form['#validate'][] = '_panelizer_variants_validate_handler';
@@ -127,10 +128,12 @@ function _panelizer_variants_entity_render($node) {
     foreach ($node[$nodekey] as $context => $value) {
       // If a field then check for context.
       if (strpos($context, 'field_') !== FALSE) {
-        // MAYBE CHANGE THIS TO GRAB THIS AND CHANGE THE KEY TO BE WHAT IT FOUND
         // Also should look into panels_panel_context_render at some point.
-        $check[] = array('taxonomy_term' => _panelizer_variants_check_contexts('target_id', $node[$nodekey]->$context));
-        $check[] = array('taxonomy_term' => _panelizer_variants_check_contexts('tid', $node[$nodekey]->$context));
+        // Get entity target type.
+        $entity_type = _panelizer_variants_entity_types($node[$nodekey], $context);
+        // Check for context of said entity type.
+        $check[] = array($entity_type => _panelizer_variants_check_contexts('target_id', $node[$nodekey]->$context));
+        $check[] = array($entity_type => _panelizer_variants_check_contexts('tid', $node[$nodekey]->$context));
       }
     }
 
@@ -194,13 +197,32 @@ function _panelizer_variants_entity_render($node) {
           }
         }
       }
-
     }
 
     return $entity;
   }
   else {
     return FALSE;
+  }
+}
+
+/**
+ * Getting the entity type of the contexts.
+ *
+ * @param array $node
+ *   Is the node in question.
+ * @param string $field
+ *   Is the field we are checking.
+ *
+ * @return string
+ *   Returns the entity type.
+ */
+function _panelizer_variants_entity_types($node, $field) {
+  $wrapper = entity_metadata_wrapper('node', $node);
+  foreach ($wrapper->getPropertyInfo() as $key => $value) {
+    if ($key == $field) {
+      return $value['type'];
+    }
   }
 }
 
@@ -226,7 +248,6 @@ function _panelizer_variants_check_contexts($needle, $haystack) {
   }
 }
 
-
 /**
  * For matching contexts on the variant.
  *
@@ -250,7 +271,6 @@ function _panelizer_variants_find_match($datas, $check) {
       }
     }
   }
-
   // If counts match up, return TRUE.
   return ($count == count($datas)) ? TRUE : FALSE;
 }
