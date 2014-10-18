@@ -34,7 +34,7 @@ function panelizer_variants_form_panelizer_default_context_form_alter(&$form, &$
 }
 
 /**
- * Helper Validator for form.
+ * Validator Submit handler for context form.
  */
 function _panelizer_variants_validate_handler($form, &$form_state) {
   if (!isset($form_state['panelizer']->contexts[0])) {
@@ -44,7 +44,7 @@ function _panelizer_variants_validate_handler($form, &$form_state) {
 }
 
 /**
- * Helper SUBMIT for form.
+ * Submit handler for context form.
  */
 function _panelizer_variants_submit_handler($form, &$form_state) {
 
@@ -90,10 +90,10 @@ function panelizer_variants_form_panels_ipe_edit_control_form_alter(&$form, &$fo
  *
  * This is needed due to the fact panels_save_display removes the
  * old display and panes.  This keeps things intact and now we can
- * have varinats with overrides on the variant overrides.
+ * have variants with overrides on the variant overrides.
  */
 function _panelizer_variants_ipe_submit_handler($form, &$form_state) {
-  // Grab the Max DID so we can psuedo create a new panel display.
+  // Grab the Max DID so we can create a new panel display.
   $did = db_query('SELECT MAX(did) FROM {panels_display}')->fetchField() + 1;
   $old_did = $form_state['display']->did;
   // Grab the old Panels Layout before save.
@@ -228,30 +228,6 @@ function _panelizer_variants_entity_render($node) {
             $entity = array_merge($entity, $entity_display);
           }
         }
-        // If all else fails, use the default layout.
-        else {
-          $defaults = db_query('SELECT * FROM {panelizer_defaults}')->fetch();
-          foreach ($defaults as $default => $value) {
-            if ($default == 'contexts') {
-              // Not really seralized data anymore, must use explode.
-              if (strpos($value, 'taxonomy_term') !== FALSE) {
-                $term = explode('"entity_id";', $value);
-                preg_match('/"([^"]+)"/', $term[1], $default_context);
-                // If TID matches node TID.
-                if (in_array($default_context[1], $check)) {
-                  foreach ($defaults as $key => $value) {
-                    $entity[$key] = $value;
-                  }
-                  $displays = panels_load_displays(array($defaults->did));
-                  foreach ($displays as $display) {
-                    $entity_display['display'] = $display;
-                  }
-                  $entity = array_merge($entity, $entity_display);
-                }
-              }
-            }
-          }
-        }
       }
     }
 
@@ -312,7 +288,7 @@ function _panelizer_variants_check_contexts($needle, $haystack) {
  * @param object $check
  *   Is the node context.
  *
- * @return boolean
+ * @return bool
  *   If it matches, return TRUE.
  */
 function _panelizer_variants_find_match($datas, $check) {
