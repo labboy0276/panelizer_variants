@@ -79,6 +79,60 @@ function _panelizer_variants_submit_handler($form, &$form_state) {
 }
 
 /**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function panelizer_variants_form_panels_ipe_edit_control_form_alter(&$form, &$form_state, $form_id) {
+  array_unshift($form['buttons']['submit']['#submit'], '_panelizer_variants_ipe_submit_handler');
+}
+
+/**
+ * Submit handler for panelizer IPE save.
+ *
+ * This is needed due to the fact panels_save_display removes the
+ * old display and panes.  This keeps things intact and now we can
+ * have varinats with overrides on the variant overrides.
+ */
+function _panelizer_variants_ipe_submit_handler($form, &$form_state) {
+  // Grab the Max DID so we can psuedo create a new panel display.
+  $did = db_query('SELECT MAX(did) FROM {panels_display}')->fetchField() + 1;
+  $old_did = $form_state['display']->did;
+  // Grab the old Panels Layout before save.
+  $old_panes = db_query('SELECT * FROM {panels_pane} WHERE did = :did', array(':did' => $old_did))->fetchAll();
+
+  // Sets up the new panels_pane stuff that gets called later.
+  $form_state['display']->did = $did;
+  foreach ($form_state['display']->content as $display) {
+    $display->did = $did;
+  }
+
+  // Writes the old panes back to the DB with new pids.
+  $pid = db_query('SELECT MAX(pid) FROM {panels_pane}')->fetchField() + 1;
+  foreach ($old_panes as $old_pane) {
+    $old_pane->pid = $pid;
+    $old_pane->uuid = ctools_uuid_generate();
+    ++$pid;
+    // Need to unseralize the data because it store is wrong.
+    $old_pane->access = unserialize($old_pane->access);
+    $old_pane->configuration = unserialize($old_pane->configuration);
+    $old_pane->cache = unserialize($old_pane->cache);
+    $old_pane->style = unserialize($old_pane->style);
+    $old_pane->css = unserialize($old_pane->css);
+    $old_pane->extras = unserialize($old_pane->extras);
+    $old_pane->locks = unserialize($old_pane->locks);
+    drupal_write_record('panels_pane', $old_pane);
+  }
+
+  // Duplicates the old panels_display so we don't get render errors.
+  $old = db_query('SELECT * FROM {panels_display} WHERE did = :did', array(':did' => $old_did))->fetch();
+  $old->did = $did;
+  $old->uuid = ctools_uuid_generate();
+  drupal_write_record('panels_display', $old);
+
+  // Need to do this because the UUID was still wrong.
+  $form_state['display']->uuid = $old->uuid;
+}
+
+/**
  * Implements hook_entity_load().
  */
 function panelizer_variants_entity_load(&$entities, $entity_type) {
@@ -100,6 +154,8 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
 
           // We need to unset the display object so we don't.
           // Have any residual data left in it.
+          ctools_include('plugins', 'panels');
+          panels_clear_cached_content($entity->panelizer['page_manager']->display);
           unset($entity->panelizer['page_manager']->display);
           $entity->panelizer['page_manager']->display = $entity_get['display'];
         }
@@ -111,7 +167,7 @@ function panelizer_variants_entity_load(&$entities, $entity_type) {
 /**
  * For rendering the panel based on Context selections from the node / panel.
  *
- * @param array $node
+ * @param object $node
  *   Is the node entity from hook_entity_load().
  *
  * @return array
@@ -209,7 +265,7 @@ function _panelizer_variants_entity_render($node) {
 /**
  * Getting the entity type of the contexts.
  *
- * @param array $node
+ * @param object $node
  *   Is the node in question.
  * @param string $field
  *   Is the field we are checking.
@@ -231,7 +287,7 @@ function _panelizer_variants_entity_types($node, $field) {
  *
  * @param string $needle
  *   Is context field search item.
- * @param array $haystack
+ * @param object $haystack
  *   Is the object we are looking in.
  *
  * @return string
@@ -251,9 +307,9 @@ function _panelizer_variants_check_contexts($needle, $haystack) {
 /**
  * For matching contexts on the variant.
  *
- * @param array $datas
+ * @param object $datas
  *   Is the variant context.
- * @param array $check
+ * @param object $check
  *   Is the node context.
  *
  * @return boolean
