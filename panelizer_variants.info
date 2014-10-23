@@ -2,4 +2,5 @@ name = Panelizer Variants
 description = Adds the functionality of Panels Variants to Panelizer.
 package = "Panels"
 dependencies[] = panelizer
+dependencies[] = entity
 core = 7.x
